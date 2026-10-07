@@ -107,7 +107,7 @@ function msSammle(q) {
     let l = sichtbar.filter((m) => m.ordner === ordnerId);
     if (worte.length) l = l.filter((m) => msPasst(worte, dbText(m)));
     const eintraege = msSortiere(l).map((m) => msAusDb(m, "db")).filter(merke);
-    if (eintraege.length) gruppen.push({ titel: "📁 " + ordnerName(ordnerId), eintraege });
+    if (eintraege.length) gruppen.push({ key: "baustelle", titel: "📁 " + ordnerName(ordnerId), eintraege });
   }
   // ⭐ Favoriten
   {
@@ -123,7 +123,7 @@ function msSammle(q) {
       if (merke(e)) favs.push(e);
       if (favs.length >= (worte.length ? 10 : 15)) break;
     }
-    if (favs.length) gruppen.push({ titel: "⭐ Favoriten", eintraege: favs });
+    if (favs.length) gruppen.push({ key: "favoriten", titel: "⭐ Favoriten", eintraege: favs });
   }
   if (!worte.length) {
     // Häufig benutzt (ohne Stern)
@@ -137,22 +137,22 @@ function msSammle(q) {
         return null;
       })
       .filter(Boolean).filter(merke).slice(0, 8);
-    if (haeufig.length) gruppen.push({ titel: "🕘 Häufig benutzt", eintraege: haeufig });
+    if (haeufig.length) gruppen.push({ key: "haeufig", titel: "🕘 Häufig benutzt", eintraege: haeufig });
     return { gruppen, worte };
   }
   // Meine Datenbank
   {
     const l = msSortiere(sichtbar.filter((m) => !m.ordner && msPasst(worte, dbText(m))));
     const eintraege = l.map((m) => msAusDb(m, "db")).filter(merke);
-    if (eintraege.length) gruppen.push({ titel: "🗂 Meine Datenbank", eintraege: eintraege.slice(0, 25), mehr: Math.max(0, eintraege.length - 25) });
+    if (eintraege.length) gruppen.push({ key: "db", titel: "🗂 Meine Datenbank", eintraege: eintraege.slice(0, 25), mehr: Math.max(0, eintraege.length - 25) });
   }
   // Großhandelskatalog
   if (q.trim().length >= 2) {
     if (typeof materialDBReady !== "undefined" && !materialDBReady) {
-      gruppen.push({ titel: "🏭 Großhandelskatalog", eintraege: [], hinweis: materialDBFehler || materialDBStatus });
+      gruppen.push({ key: "katalog", titel: "🏭 Großhandelskatalog", eintraege: [], hinweis: materialDBFehler || materialDBStatus });
     } else {
       const kat = sucheMaterial(q, 40).filter((a) => !a._eigen).map(msAusKatalog).filter(merke).slice(0, 20);
-      if (kat.length) gruppen.push({ titel: "🏭 Großhandelskatalog", eintraege: kat });
+      if (kat.length) gruppen.push({ key: "katalog", titel: "🏭 Großhandelskatalog", eintraege: kat });
     }
   }
   return { gruppen, worte };
@@ -166,27 +166,39 @@ function msRender(q) {
   const text = (q || "").trim();
   const { gruppen } = msSammle(text);
   erg.innerHTML = "";
+  // Gruppen zum Aufklappen. Ohne Suchtext: nur der Baustellen-Ordner offen (Zustand wird gemerkt),
+  // mit Suchtext: alle Treffer offen.
+  let offen = {};
+  try { offen = JSON.parse(localStorage.getItem("am2_ms_offen") || "{}") || {}; } catch (e) { offen = {}; }
   for (const g of gruppen) {
-    const kopf = document.createElement("div");
-    kopf.className = "ms-gruppe";
-    kopf.textContent = g.titel;
-    erg.appendChild(kopf);
+    const det = document.createElement("details");
+    det.className = "ms-gruppe-det";
+    det.open = text ? true : (g.key in offen ? !!offen[g.key] : g.key === "baustelle");
+    const sum = document.createElement("summary");
+    sum.className = "ms-gruppe";
+    sum.textContent = g.titel + (g.eintraege.length ? ` (${g.eintraege.length}${g.mehr ? "+" : ""})` : "");
+    det.appendChild(sum);
+    if (!text) det.addEventListener("toggle", () => {
+      offen[g.key] = det.open;
+      try { localStorage.setItem("am2_ms_offen", JSON.stringify(offen)); } catch (e) { /* egal */ }
+    });
     if (g.hinweis) {
       const p = document.createElement("p");
       p.className = "hint ms-hinweis";
       p.textContent = g.hinweis;
-      erg.appendChild(p);
+      det.appendChild(p);
     }
     const ul = document.createElement("ul");
     ul.className = "ms-liste";
     for (const e of g.eintraege) ul.appendChild(msZeile(e));
-    erg.appendChild(ul);
+    if (g.eintraege.length) det.appendChild(ul);
     if (g.mehr) {
       const p = document.createElement("p");
       p.className = "hint ms-hinweis";
       p.textContent = `… und ${g.mehr} weitere – Suche genauer eingeben.`;
-      erg.appendChild(p);
+      det.appendChild(p);
     }
+    erg.appendChild(det);
   }
   if (text) {
     if (istEanAehnlich(text) && !gruppen.some((g) => g.eintraege.length)) erg.appendChild(msEanNeuZeile(text));
@@ -209,21 +221,60 @@ function msZeile(e) {
   li.querySelector("small").textContent = e.info;
   if (e.stern) bindeSternKnopf(li.querySelector(".stern-btn"), e.stern, () => {});
   else li.querySelector(".stern-btn").remove();
-  li.addEventListener("click", () => msHinzufuegen(e, 1));
+  li.addEventListener("click", (ev) => {
+    if (ev.target.closest(".ms-menge")) return;
+    msOeffneMenge(li, e);
+  });
   return li;
+}
+
+/* Mengenfeld direkt unter dem angetippten Eintrag: Menge wählen → „Hinzufügen“ */
+function msOeffneMenge(zeile, e, mitEinheitWahl) {
+  document.querySelectorAll(".ms-menge").forEach((x) => { const z = x.closest(".ms-zeile, .ms-frei"); x.remove(); if (z) z.classList.remove("offen"); });
+  zeile.classList.add("offen");
+  const box = document.createElement("div");
+  box.className = "ms-menge";
+  const einheitHtml = mitEinheitWahl
+    ? `<select class="ms-menge-einheit">${MS_EINHEITEN.map((x) => `<option${x === e.einheit ? " selected" : ""}>${x}</option>`).join("")}</select>`
+    : `<span class="ms-menge-einheit-text"></span>`;
+  box.innerHTML = `
+    <div class="ms-menge-zeile">
+      <button type="button" class="btn-qty" data-a="minus" aria-label="weniger">−</button>
+      <input type="number" class="ms-menge-input" step="any" min="0" inputmode="decimal" value="1">
+      <button type="button" class="btn-qty" data-a="plus" aria-label="mehr">＋</button>
+      ${einheitHtml}
+    </div>
+    <div class="ms-menge-aktionen">
+      <button type="button" class="btn btn-primary ms-menge-ok">Hinzufügen</button>
+      <button type="button" class="btn-danger-text ms-menge-ab">Abbrechen</button>
+    </div>`;
+  if (!mitEinheitWahl) box.querySelector(".ms-menge-einheit-text").textContent = e.einheit || "Stck";
+  const inp = box.querySelector(".ms-menge-input");
+  const wert = () => { const v = parseFloat(String(inp.value).replace(",", ".")); return isNaN(v) ? 0 : v; };
+  box.querySelector('[data-a="minus"]').addEventListener("click", () => { inp.value = Math.max(0, rundeMenge(wert() - 1)); });
+  box.querySelector('[data-a="plus"]').addEventListener("click", () => { inp.value = rundeMenge(wert() + 1); });
+  const ok = () => {
+    const menge = wert();
+    if (!(menge > 0)) { inp.focus(); return; }
+    const eintrag = mitEinheitWahl ? { ...e, einheit: box.querySelector(".ms-menge-einheit").value } : e;
+    msHinzufuegen(eintrag, menge);
+  };
+  box.querySelector(".ms-menge-ok").addEventListener("click", ok);
+  inp.addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); ok(); } });
+  box.querySelector(".ms-menge-ab").addEventListener("click", () => { box.remove(); zeile.classList.remove("offen"); });
+  zeile.appendChild(box);
+  setTimeout(() => { inp.focus(); inp.select(); box.scrollIntoView({ block: "nearest", behavior: "smooth" }); }, 30);
 }
 
 function msFreiZeile(text) {
   const li = document.createElement("div");
   li.className = "ms-frei";
-  li.innerHTML = `<span class="ms-frei-text"></span>
-    <select class="ms-frei-einheit">${MS_EINHEITEN.map((x) => `<option>${x}</option>`).join("")}</select>
-    <button type="button" class="btn btn-secondary">＋</button>`;
+  li.innerHTML = `<span class="ms-frei-text"></span><span class="ms-plus" aria-hidden="true">＋</span>`;
   li.querySelector(".ms-frei-text").textContent = `✎ „${text}“ als eigenes Material`;
-  const sel = li.querySelector("select");
-  if (/\b(nym|kabel|leitung|rohr|kanal|stripe|streifen|band|draht|litze)\b/i.test(text)) sel.value = "m";
-  li.querySelector("button").addEventListener("click", () => {
-    msHinzufuegen({ quelle: "frei", name: text, nr: "", ean: "", einheit: sel.value }, 1);
+  const einheit = /\b(nym|kabel|leitung|rohr|kanal|stripe|streifen|band|draht|litze)\b/i.test(text) ? "m" : "Stck";
+  li.addEventListener("click", (ev) => {
+    if (ev.target.closest(".ms-menge")) return;
+    msOeffneMenge(li, { quelle: "frei", name: text, nr: "", ean: "", einheit }, true);
   });
   return li;
 }
@@ -240,8 +291,8 @@ function msEanNeuZeile(code) {
 function msEanNeu(code) {
   const name = (prompt(`Bezeichnung für EAN ${code}:`) || "").trim();
   if (!name) return;
-  const einheit = (prompt("Einheit (Stck, m, Rolle, Pack …):", "Stck") || "Stck").trim() || "Stck";
-  msHinzufuegen({ quelle: "frei", name, nr: "", ean: code, einheit }, 1);
+  const zeile = document.querySelector(".ms-ean");
+  if (zeile) msOeffneMenge(zeile, { quelle: "frei", name, nr: "", ean: code, einheit: "Stck" }, true);
 }
 
 /* ---------- Scannen ---------- */
@@ -253,10 +304,10 @@ function msNachScan(roh) {
   suche.value = code;
   // exakter Treffer in der eigenen Datenbank (sichtbar) -> direkt hinzufügen
   const m = dbMaterial.find((x) => imKontextSichtbar(x) && ((x.ean && eanVarianten(code).includes(x.ean)) || x.ean === code || x.nr === code));
-  if (m) { msHinzufuegen(msAusDb(m, "db"), 1); msRender(code); return; }
-  const kat = (typeof materialDBReady === "undefined" || materialDBReady) ? sucheNachEan(code, 3).filter((a) => !a._eigen) : [];
-  if (kat.length === 1) { msHinzufuegen(msAusKatalog(kat[0]), 1); msRender(code); return; }
   msRender(code);
+  // eindeutiger Treffer: Mengenfeld gleich öffnen
+  const zeilen = document.querySelectorAll("#ms_ergebnis .ms-zeile");
+  if (m || zeilen.length === 1) { if (zeilen[0]) zeilen[0].click(); }
 }
 
 /* ---------- Hinzufügen ---------- */
@@ -287,20 +338,37 @@ function msHinzufuegen(e, menge) {
   const id = zeile.id;
   fertig();
   const suche = msEl("ms_suche");
-  if (suche && suche.value) { suche.select(); msRender(suche.value); } else msRender("");
-  msSnack({
-    text: istKombination ? `✓ ${name} – Teile einzeln eingetragen` : `✓ ${name}`,
-    zeile: istKombination ? null : zeile,
-    rueckgaengig: () => {
+  if (suche) suche.value = "";
+  msRender("");
+  const mengeText = String(menge).replace(".", ",");
+  msBestaetigung(
+    istKombination ? `✓ ${mengeText}× ${name} – Teile einzeln eingetragen` : `✓ ${mengeText} ${einheit} ${name} hinzugefügt${neu ? "" : ` (jetzt ${String(zeile.menge).replace(".", ",")} ${einheit})`}`,
+    () => {
       if (neu) {
         for (let i = material.length - 1; i >= 0; i--) if (String(material[i].id).split("~")[0] === id) material.splice(i, 1);
       } else if (zeile) zeile.menge = vorher;
       fertig();
-    }
-  });
+    });
 }
 
-/* ---------- Leiste „zuletzt hinzugefügt“ ---------- */
+/* Bestätigung direkt unter dem Suchfeld (bleibt, bis das nächste Material kommt) */
+function msBestaetigung(text, rueckgaengig) {
+  const kopf = document.querySelector(".ms-kopf");
+  if (!kopf) return;
+  let el = document.getElementById("ms_ok");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "ms_ok";
+    el.className = "ms-ok";
+    kopf.after(el);
+  }
+  el.innerHTML = `<span></span><button type="button" class="btn-link-accent">↶ Rückgängig</button>`;
+  el.querySelector("span").textContent = text;
+  el.querySelector("button").addEventListener("click", () => { rueckgaengig(); el.remove(); });
+  el.hidden = false;
+}
+
+/* ---------- (alte schwebende Leiste, nur noch zum Ausblenden) ---------- */
 
 let msSnackTimer = null;
 
@@ -308,40 +376,4 @@ function msSnackAus() {
   clearTimeout(msSnackTimer);
   const el = document.getElementById("msSnack");
   if (el) el.hidden = true;
-}
-
-function msSnack({ text, zeile, rueckgaengig }) {
-  let el = document.getElementById("msSnack");
-  if (!el) {
-    el = document.createElement("div");
-    el.id = "msSnack";
-    el.className = "ms-snack";
-    document.body.appendChild(el);
-  }
-  el.innerHTML = `<div class="ms-snack-text"></div>
-    <div class="ms-snack-aktionen">
-      ${zeile ? `<button type="button" class="btn-qty" data-a="minus" aria-label="weniger">−</button>
-      <input type="number" class="ms-snack-menge" step="any" min="0" inputmode="decimal">
-      <button type="button" class="btn-qty" data-a="plus" aria-label="mehr">＋</button>
-      <span class="ms-snack-einheit"></span>` : ""}
-      <button type="button" class="ms-snack-undo">↶</button>
-      <button type="button" class="ms-snack-zu" aria-label="Schließen">✕</button>
-    </div>`;
-  el.querySelector(".ms-snack-text").textContent = text;
-  const verlaengere = () => { clearTimeout(msSnackTimer); msSnackTimer = setTimeout(msSnackAus, 8000); };
-  if (zeile) {
-    const inp = el.querySelector(".ms-snack-menge");
-    inp.value = zeile.menge;
-    el.querySelector(".ms-snack-einheit").textContent = zeile.einheit;
-    const setze = (v) => { zeile.menge = Math.max(0, rundeMenge(v)); inp.value = zeile.menge; msZustand && msZustand.fertig(); verlaengere(); };
-    el.querySelector('[data-a="minus"]').addEventListener("click", () => setze((zeile.menge || 0) - 1));
-    el.querySelector('[data-a="plus"]').addEventListener("click", () => setze((zeile.menge || 0) + 1));
-    inp.addEventListener("focus", () => { clearTimeout(msSnackTimer); inp.select(); });
-    inp.addEventListener("change", () => { const v = parseFloat(String(inp.value).replace(",", ".")); setze(isNaN(v) ? 0 : v); });
-    inp.addEventListener("blur", verlaengere);
-  }
-  el.querySelector(".ms-snack-undo").addEventListener("click", () => { rueckgaengig(); msSnackAus(); });
-  el.querySelector(".ms-snack-zu").addEventListener("click", msSnackAus);
-  el.hidden = false;
-  verlaengere();
 }

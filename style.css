@@ -845,3 +845,23 @@ main#app { padding-top: calc(var(--header-h) + var(--safe-top) + 14px); }
 .db-filter { margin-top: 8px; }
 .doppelt-karte { padding: 10px 12px; }
 .doppelt-karte .btn { margin-top: 6px; width: 100%; }
+
+/* Materialsuche v2: aufklappbare Gruppen, Mengenfeld in der Zeile, Bestätigung unter dem Suchfeld */
+.ms-gruppe-det { margin-top: 8px; }
+.ms-gruppe-det > summary.ms-gruppe { cursor: pointer; list-style: none; padding: 8px 2px; margin: 0; display: flex; justify-content: space-between; align-items: center; }
+.ms-gruppe-det > summary.ms-gruppe::-webkit-details-marker { display: none; }
+.ms-gruppe-det > summary.ms-gruppe::after { content: "▸"; font-size: 0.9rem; }
+.ms-gruppe-det[open] > summary.ms-gruppe::after { content: "▾"; }
+.ms-zeile, .ms-frei { flex-wrap: wrap; }
+.ms-frei { cursor: pointer; }
+.ms-zeile.offen, .ms-frei.offen { background: #f3f7ff; }
+.ms-menge { flex-basis: 100%; width: 100%; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--color-border); display: grid; gap: 8px; cursor: default; }
+.ms-menge-zeile { display: flex; align-items: center; gap: 6px; }
+.ms-menge-input { width: 90px; text-align: center; font-size: 1.05rem; padding: 8px; }
+.ms-menge .btn-qty { width: 42px; height: 40px; font-size: 1.15rem; }
+.ms-menge-einheit, .ms-menge-einheit-text { margin-left: 4px; }
+.ms-menge-einheit { width: auto; padding: 8px; }
+.ms-menge-aktionen { display: flex; align-items: center; gap: 12px; }
+.ms-menge-ok { flex: 1; }
+.ms-ok { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; padding: 9px 12px; border-radius: 10px; background: #ecf8f0; border: 1px solid #9fd8b0; color: #1e6b3a; font-size: 0.88rem; font-weight: 600; }
+.ms-ok .btn-link-accent { white-space: nowrap; }
