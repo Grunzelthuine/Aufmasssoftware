@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aufmaßsoftware</title>
+<meta name="theme-color" content="#152238">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Aufmaß 2">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-inner">
+    <button id="btnBack" class="icon-btn" hidden aria-label="Zurück">←</button>
+    <h1 id="headerTitle">Material-Aufmaß</h1>
+    <button id="btnNew" class="icon-btn" aria-label="Neu" hidden>＋</button>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<div id="updateBanner" class="update-banner" hidden>
+  <span>Neue Version verfügbar.</span>
+  <button id="btnUpdate" class="btn btn-secondary">Jetzt aktualisieren</button>
+</div>
+
+<div id="scannerOverlay" class="scanner-overlay" hidden>
+  <div class="scanner-box">
+    <div class="scanner-header">
+      <span>Barcode scannen</span>
+      <button type="button" id="btnScannerSchliessen" class="icon-btn scanner-x" aria-label="Schließen">✕</button>
+    </div>
+    <div id="scannerReader"></div>
+    <p id="scannerHinweis" class="hint">Kamera wird gestartet…</p>
+    <div class="scanner-manuell">
+      <label>Kein Treffer? Nummer manuell eingeben
+        <div class="scanner-manuell-row">
+          <input type="text" id="scannerManuellInput" inputmode="numeric" placeholder="EAN oder Artikelnummer">
+          <button type="button" class="btn btn-secondary" id="scannerManuellBtn">Suchen</button>
+        </div>
+      </label>
+      <button type="button" class="btn btn-outline-neutral scanner-abbrechen" id="btnScannerAbbrechen">Abbrechen – zurück</button>
+    </div>
+  </div>
+</div>
+
+<!-- Vorlage: Formular -->
+<template id="tpl-formular">
+  <section class="view">
+    <details class="section-card" open>
+      <summary>Kunde &amp; Baustelle</summary>
+      <div class="field-grid">
+        <label>Kunde / Firma
+          <input type="text" id="f_kundeName" placeholder="z. B. Mustermann GmbH">
+        </label>
+        <label>Ansprechpartner
+          <input type="text" id="f_ansprechpartner" placeholder="optional">
+        </label>
+        <label>Straße, Nr.
+          <input type="text" id="f_strasse" placeholder="optional">
+        </label>
+        <label>PLZ, Ort
+          <input type="text" id="f_plzOrt" placeholder="optional">
+        </label>
+        <label>Telefon
+          <input type="tel" id="f_telefon" placeholder="optional">
+        </label>
+        <label>Baustelle / Bauvorhaben
+          <input type="text" id="f_baustelle" placeholder="falls abweichend von Adresse">
+        </label>
+      </div>
+    </details>
+
+    <details class="section-card" open>
+      <summary>Datum &amp; Arbeitsbeschreibung</summary>
+      <div class="field-grid">
+        <label>Datum
+          <input type="date" id="f_datum">
+        </label>
+      </div>
+      <label class="full">Arbeitsbeschreibung
+        <textarea id="f_arbeitsbeschreibung" rows="3" placeholder="Was wurde / wird ausgeführt?"></textarea>
+      </label>
+    </details>
+
+    <details class="section-card" open>
+      <summary>Material hinzufügen</summary>
+      <div id="a_ordner" class="aufmass-ordner"></div>
+      <div id="materialHinzufuegenAufmass"></div>
+    </details>
+
+    <details class="section-card" open>
+      <summary><span>Materialliste (<span id="anzahlPositionen">0</span>)</span></summary>
+      <div class="table-scroll">
+        <table id="materialTabelle">
+          <thead>
+            <tr>
+              <th>Bezeichnung</th>
+              <th>Menge</th>
+              <th>Einh.</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="materialTbody"></tbody>
+        </table>
+      </div>
+      <p id="materialLeerHinweis" class="hint" hidden>Noch kein Material erfasst.</p>
+    </details>
+
+    <div class="action-bar">
+      <button class="btn btn-outline" id="btnLoeschen" hidden>Aufmaß löschen</button>
+      <button class="btn btn-primary" id="btnPdf">PDF erstellen &amp; senden</button>
+    </div>
+    <p class="autosave-hint">Änderungen werden automatisch gespeichert.</p>
+  </section>
+</template>
+
+<!-- Wiederverwendbarer Baustein: Material hinzufügen (Tabs Favoriten / Aus Liste / Standardmaterial / Freitext) -->
+<template id="tpl-material-suche">
+  <div class="ms">
+    <div class="ms-kopf">
+      <input type="search" id="ms_suche" placeholder="Material suchen (Name, Art.-Nr., EAN)…" autocomplete="off" enterkeyhint="search">
+      <button type="button" class="btn-scan" id="ms_scan" aria-label="Barcode scannen">📷</button>
+      <button type="button" class="btn-scan" id="ms_diktatBtn" aria-label="Material diktieren" hidden>🎤</button>
+    </div>
+    <div id="ms_diktat" class="ms-diktat" hidden>
+      <textarea id="md_text" rows="3" placeholder="Ins Feld tippen, Mikrofon der Tastatur antippen und sprechen, z. B.: 20 Meter NYM 3x1,5, 10 Abzweigdosen, 5 Wago Klemmen"></textarea>
+      <button class="btn btn-secondary" id="md_hinzufuegen" disabled>Erkennen und hinzufügen</button>
+      <div id="md_ergebnis" class="diktat-vorschau" hidden></div>
+    </div>
+    <div id="ms_ergebnis" class="ms-ergebnis"></div>
+  </div>
+</template>
+
+<!-- Vorlage: Packliste -->
+<template id="tpl-packliste">
+  <section class="view">
+    <details class="section-card" open>
+      <summary>Packliste</summary>
+      <div class="field-grid">
+        <label class="full">Bezeichnung
+          <input type="text" id="p_bezeichnung" placeholder="z. B. Baustelle Müller / KW38">
+        </label>
+        <label>Datum
+          <input type="date" id="p_datum">
+        </label>
+      </div>
+    </details>
+
+    <details class="section-card" open>
+      <summary>Material hinzufügen</summary>
+      <div id="materialHinzufuegenPackliste"></div>
+    </details>
+
+    <details class="section-card" open>
+      <summary><span>Noch zu packen (<span id="packlisteAnzahlOffen">0</span>)</span></summary>
+      <div class="table-scroll">
+        <table id="packlisteOffenTabelle">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Bezeichnung</th>
+              <th>Menge</th>
+              <th>Einh.</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="packlisteOffenTbody"></tbody>
+        </table>
+      </div>
+      <p id="packlisteOffenLeer" class="hint" hidden>Alles eingepackt.</p>
+    </details>
+
+    <details class="section-card" id="packlisteGepacktDetails">
+      <summary><span>Bereits gepackt (<span id="packlisteAnzahlGepackt">0</span>)</span></summary>
+      <div class="table-scroll">
+        <table id="packlisteGepacktTabelle">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Bezeichnung</th>
+              <th>Menge</th>
+              <th>Einh.</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="packlisteGepacktTbody"></tbody>
+        </table>
+      </div>
+    </details>
+
+    <div class="action-bar">
+      <button class="btn btn-outline" id="btnPacklisteLoeschen" hidden>Packliste löschen</button>
+    </div>
+    <p class="autosave-hint">Änderungen werden automatisch gespeichert.</p>
+  </section>
+</template>
+
+<!-- Vorlage: Bauaufmaß (v10) -->
+<template id="tpl-bauaufmass">
+  <section class="view">
+    <details class="section-card" open>
+      <summary>Kunde &amp; Baustelle</summary>
+      <div class="field-grid">
+        <label>Kunde / Firma
+          <input type="text" id="b_kundeName" placeholder="z. B. Mustermann GmbH">
+        </label>
+        <label>Ansprechpartner
+          <input type="text" id="b_ansprechpartner" placeholder="optional">
+        </label>
+        <label>Straße, Nr.
+          <input type="text" id="b_strasse" placeholder="optional">
+        </label>
+        <label>PLZ, Ort
+          <input type="text" id="b_plzOrt" placeholder="optional">
+        </label>
+        <label>Telefon
+          <input type="tel" id="b_telefon" placeholder="optional">
+        </label>
+        <label>Baustelle / Bauvorhaben
+          <input type="text" id="b_baustelle" placeholder="falls abweichend von Adresse">
+        </label>
+      </div>
+    </details>
+
+    <details class="section-card" open>
+      <summary>Arbeitsbeschreibung</summary>
+      <label class="full">
+        <textarea id="b_arbeitsbeschreibung" rows="3" placeholder="z. B. Elektroinstallation Neubau EFH"></textarea>
+      </label>
+      <p class="hint" id="b_datumHinweis"></p>
+    </details>
+
+    <details class="section-card" open>
+      <summary>📁 Baustellen-Material &amp; Standard-Typen</summary>
+      <div id="b_ordner"></div>
+      <div id="b_standards" class="standard-typen"></div>
+    </details>
+
+    <details class="section-card" open>
+      <summary>Installation, Abdeckung &amp; Rahmen</summary>
+      <div id="b_abdeckung" class="abdeckung-einstellung"></div>
+      <p class="hint">Gilt für Steckdosen, Schalter/Taster, Datendosen, Blindabdeckungen und Rahmen. Abweichungen je Raum oder je Position im Raum möglich.</p>
+    </details>
+
+    <details class="section-card" open>
+      <summary>Etagen &amp; Räume</summary>
+      <p id="b_etagenLeer" class="hint" hidden>Noch keine Etage – unten eine Etage hinzufügen.</p>
+      <div id="b_etagen" class="etagen-liste"></div>
+      <div id="b_etageAuswahl"></div>
+    </details>
+
+    <details class="section-card" open>
+      <summary>Verteilungen</summary>
+      <p id="b_verteilungenLeer" class="hint" hidden>Noch keine Verteilung.</p>
+      <ul id="b_verteilungen" class="raum-liste"></ul>
+      <div id="b_verteilungAuswahl"></div>
+    </details>
+
+    <div class="action-bar">
+      <button class="btn btn-outline" id="btnBauLoeschen" hidden>Bauaufmaß löschen</button>
+      <button class="btn btn-primary" id="btnBauPdf">PDF erstellen &amp; senden</button>
+    </div>
+    <p class="autosave-hint">Änderungen werden automatisch gespeichert.</p>
+  </section>
+</template>
+
+<!-- Vorlage: Raum im Bauaufmaß (v10) -->
+<template id="tpl-raum">
+  <section class="view">
+    <div class="section-card raum-kopf-karte">
+      <div class="field-grid">
+        <label><span>Raum · Etage <span id="r_etage"></span></span>
+          <input type="text" id="r_name">
+        </label>
+      </div>
+      <div id="r_abdeckung"></div>
+    </div>
+
+    <div id="r_schnell" class="raum-schnell"></div>
+    <div id="r_diktat"></div>
+
+    <details class="section-card" open>
+      <summary><span><span id="r_schaltTitel">Beleuchtung</span> (<span id="r_anzahlSchaltungen">0</span>)</span></summary>
+      <p id="r_schaltungenLeer" class="hint" hidden>Noch keine Schaltung – unten Schaltungsart wählen.</p>
+      <div id="r_schaltungen" class="schaltungen-liste"></div>
+      <div id="r_schaltungAuswahl"></div>
+    </details>
+
+    <details class="section-card" id="r_rolloDetails">
+      <summary><span>Rollos (<span id="r_anzahlRollos">0</span>)</span></summary>
+      <p id="r_rollosLeer" class="hint" hidden>Noch kein Rollo-Anschluss.</p>
+      <div id="r_rollos" class="schaltungen-liste"></div>
+      <button type="button" class="chip chip-schaltung" id="r_rolloHinzufuegen">+ Rollo-Anschluss</button>
+    </details>
+
+    <details class="section-card" id="r_knxDetails">
+      <summary><span>KNX (<span id="r_anzahlKnx">0</span>)</span></summary>
+      <p id="r_knxLeer" class="hint" hidden>Noch keine KNX-Komponente.</p>
+      <div id="r_knx" class="schaltungen-liste"></div>
+      <div id="r_knxAuswahl"></div>
+    </details>
+
+    <details class="section-card" id="r_melderDetails">
+      <summary><span>Melder (<span id="r_anzahlMelder">0</span>)</span></summary>
+      <p id="r_melderLeer" class="hint" hidden>Noch kein Melder.</p>
+      <div id="r_melder" class="schaltungen-liste"></div>
+      <div id="r_melderAuswahl"></div>
+    </details>
+
+    <div id="r_gruppen" class="view"></div>
+
+    <details class="section-card" id="r_abwDetails">
+      <summary><span>Abweichende Abdeckung (<span id="r_anzahlAbw">0</span>)</span></summary>
+      <p class="hint">Zusätzlich zu den Zählern oben: Positionen mit anderer Abdeckung als im Raum, z. B. 2 Steckdosen in AP-Feuchtraum.</p>
+      <p id="r_abwLeer" class="hint" hidden>Keine Abweichungen.</p>
+      <div id="r_abw" class="schaltungen-liste"></div>
+      <button type="button" class="chip chip-schaltung" id="r_abwHinzufuegen">+ Position mit anderer Abdeckung</button>
+    </details>
+
+    <details class="section-card">
+      <summary>Weiteres Material hinzufügen</summary>
+      <div id="materialHinzufuegenRaum"></div>
+    </details>
+
+    <details class="section-card" open>
+      <summary><span>Material im Raum (<span id="r_anzahlMaterial">0</span>)</span></summary>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Bezeichnung</th><th>Menge</th><th>Einh.</th><th></th></tr></thead>
+          <tbody id="r_materialTbody"></tbody>
+        </table>
+      </div>
+      <p id="r_materialLeer" class="hint" hidden>Kein zusätzliches Material.</p>
+    </details>
+
+    <div class="action-bar">
+      <button class="btn btn-primary" id="btnRaumFertig">Fertig – zurück zum Bauaufmaß</button>
+    </div>
+    <div class="action-bar raum-aktionen">
+      <button class="btn-link-accent" id="btnRaumKopieren">Raum kopieren</button>
+      <button class="btn-link-accent" id="btnRaumVorlage">Als Vorlage speichern</button>
+      <button class="btn-danger-text" id="btnRaumLoeschen">Raum löschen</button>
+    </div>
+    <p class="autosave-hint">Änderungen werden automatisch gespeichert.</p>
+  </section>
+</template>
+
+<!-- Vorlage: Verteilung im Bauaufmaß (v11) -->
+<template id="tpl-verteilung">
+  <section class="view">
+    <div class="section-card raum-kopf-karte">
+      <div class="field-grid">
+        <label>Bezeichnung
+          <input type="text" id="v_name" placeholder="z. B. HV, UV OG">
+        </label>
+        <label>Standort
+          <input type="text" id="v_standort" placeholder="z. B. HAR / KG">
+        </label>
+        <label>Typenbezeichnung
+          <input type="text" id="v_typ" placeholder="z. B. Hager ZB33S, 3-reihig, 3 Felder">
+        </label>
+        <label>Bemerkung
+          <textarea id="v_bemerkung" rows="2" placeholder="optional"></textarea>
+        </label>
+      </div>
+    </div>
+
+    <details class="section-card" open>
+      <summary><span>Positionen (<span id="v_anzahlKomponenten">0</span>)</span></summary>
+      <p id="v_komponentenLeer" class="hint" hidden>Noch keine Position – unten auswählen (FI, LS, Reihenklemmen, …).</p>
+      <div id="v_komponenten" class="schaltungen-liste"></div>
+      <div id="v_auswahl"></div>
+    </details>
+
+    <details class="section-card">
+      <summary>Weiteres Material hinzufügen</summary>
+      <div id="materialHinzufuegenVerteilung"></div>
+    </details>
+
+    <details class="section-card" open>
+      <summary><span>Material (<span id="r_anzahlMaterial">0</span>)</span></summary>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Bezeichnung</th><th>Menge</th><th>Einh.</th><th></th></tr></thead>
+          <tbody id="r_materialTbody"></tbody>
+        </table>
+      </div>
+      <p id="r_materialLeer" class="hint" hidden>Kein zusätzliches Material.</p>
+    </details>
+
+    <div class="action-bar">
+      <button class="btn btn-primary" id="btnVerteilungFertig">Fertig – zurück zum Bauaufmaß</button>
+    </div>
+    <div class="action-bar raum-aktionen">
+      <span></span>
+      <button class="btn-danger-text" id="btnVerteilungLoeschen">Verteilung löschen</button>
+    </div>
+    <p class="autosave-hint">Änderungen werden automatisch gespeichert.</p>
+  </section>
+</template>
+
+<script src="vendor/jspdf.umd.min.js"></script>
+<script src="vendor/jspdf.plugin.autotable.min.js"></script>
+<script src="vendor/html5-qrcode.min.js"></script>
+<script src="vendor/firebase-app-compat.js"></script>
+<script src="vendor/firebase-auth-compat.js"></script>
+<script src="vendor/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="uebernahme.js"></script>
+<script src="bauaufmass.js"></script>
+<script src="diktat.js"></script>
+<script src="datenbank.js"></script>
+<script src="app.js"></script>
+<script src="materialsuche.js"></script>
+<script src="cloudsync.js"></script>
+</body>
+</html>
