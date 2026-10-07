@@ -56,6 +56,7 @@ const DIKTAT_MUSTER = [
   { re: /aus[- ]?schaltung[a-zäöüß]*|aus[- ]?schalter[a-zäöüß]*/, art: "schaltung", typ: "aus" },
   { re: /dimmer[a-zäöüß]*/, art: "schaltung", typ: "dimmer" },
   // LED-Stripes
+  { re: /led[- ]?(netzteil|treiber|trafo)[a-zäöüß]*|netzteil[a-zäöüß]*|netzger(ä|ae)t[a-zäöüß]*|treiber\b/, art: "netzteil" },
   { re: /led[- ]?(stripe|strip|streifen|band)[a-zäöüß]*|lichtband[a-zäöüß]*/, art: "stripe" },
   // Auslässe (gehören zur aktuellen Schaltung)
   { re: /(schaltbare|geschaltete|geschalteten|schaltbaren)\s+steckdose[a-zäöüß]*/, art: "auslass", key: "steckdose" },
@@ -217,6 +218,16 @@ function werteDiktatAus(text) {
       }
       return;
     }
+    // Aufmaßsoftware: „… LED-Stripe 5 Meter mit 2 Netzteilen“ -> Netzteile zum letzten Stripe
+    if (mu.art === "netzteil") {
+      const sch = ctx && ctx.art === "schaltung" ? ctx.obj : letzteSchaltung;
+      if (sch && sch.stripes.length) {
+        sch.nt = sch.nt || {};
+        const i = sch.stripes.length - 1;
+        sch.nt[i] = (sch.nt[i] || 0) + Math.max(1, Math.round(n));
+      } else unbekannt.push(tr.text.trim());
+      return;
+    }
     if (mu.art === "stellen") {
       if (ctx && ctx.art === "schaltung" && anzahl !== null) ctx.obj.schaltstellen = Math.round(anzahl);
       return;
@@ -330,10 +341,11 @@ function diktatVorschau(ergebnis) {
       if (a.schaltstellen) teile.push(`${a.schaltstellen} ${t.stromkreis && a.schaltstellen === 1 ? "Stromkreis" : t.stellenEinheit || "Schaltstellen"}`);
       if (a.melderArt) teile.push(`${a.melderAnzahl || 1}× ${melderArt(a.melderArt).b}`);
       for (const x of BAU_AUSLAESSE) if (a.auslaesse[x.key]) teile.push(`${a.auslaesse[x.key]}× ${x.b}`);
-      for (const m of a.stripes) {
-        if (typeof m === "object") teile.push(`LED-Stripe ${m.menge} Rolle${m.menge === 1 ? "" : "n"}`);
-        else teile.push(`LED-Stripe ${String(m).replace(".", ",")} m`);
-      }
+      a.stripes.forEach((m, i) => {
+        const nt = a.nt && a.nt[i] ? ` + ${a.nt[i]}× Netzteil` : "";
+        if (typeof m === "object") teile.push(`LED-Stripe ${m.menge} Rolle${m.menge === 1 ? "" : "n"}${nt}`);
+        else teile.push(`LED-Stripe ${String(m).replace(".", ",")} m${nt}`);
+      });
       zeilen.push({ text: `${t.b}${teile.length ? ": " + teile.join(", ") : ""}`, hinweis: a.angenommen ? "Schaltungsart nicht genannt – Ausschaltung angenommen" : (a.hinweis || "") });
     } else if (a.art === "position") {
       zeilen.push({ text: `${a.anzahl}× ${diktatPositionsName(a.key)}`, hinweis: a.annahme || "" });
@@ -363,9 +375,9 @@ function wendeDiktatAn(raum, ergebnis) {
       const s = { id: neueId(), typ: t.key, schaltstellen: Math.max(t.min, a.schaltstellen || t.min), wand: 0, decke: 0, steckdose: 0, strahler: 0, bemerkung: "", stripes: [] };
       if (t.melder) Object.assign(s, { melderArt: a.melderArt || "praesenz", melderAnzahl: a.melderAnzahl || 1, melderTyp: "", melderNr: "" });
       for (const x of BAU_AUSLAESSE) s[x.key] = a.auslaesse[x.key] || 0;
-      s.stripes = a.stripes.map((m) => (typeof m === "object"
+      s.stripes = a.stripes.map((m, i) => Object.assign(typeof m === "object"
         ? { id: neueId(), meter: m.menge, einheit: "Rolle", typ: "", nr: "" }
-        : { id: neueId(), meter: m, einheit: "m", typ: "", nr: "" }));
+        : { id: neueId(), meter: m, einheit: "m", typ: "", nr: "" }, a.nt && a.nt[i] ? { nt: a.nt[i] } : {}));
       raum.schaltungen.push(s);
     } else if (a.art === "position") {
       raum.positionen[a.key] = (raum.positionen[a.key] || 0) + a.anzahl;

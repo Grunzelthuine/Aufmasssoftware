@@ -143,7 +143,8 @@ const PRODUKT_KATEGORIEN = [ // gruppe: Überschrift in der Produktliste
   { key: "bewegung", gruppe: "Melder", b: "Bewegungsmelder (konventionell)", ph: "z. B. Steinel IS 3360" },
   { key: "rauchmelder", gruppe: "Melder", b: "Rauchmelder", ph: "z. B. Ei Electronics Ei650" },
   { key: "strahler", gruppe: "Beleuchtung", b: "Strahler / Downlights", ph: "z. B. SLV Universal Downlight 7 W 3000 K" },
-  { key: "ledstripe", gruppe: "Beleuchtung", b: "LED-Stripes", ph: "z. B. Paulmann MaxLED 1000 3000 K", einheit: "m" }
+  { key: "ledstripe", gruppe: "Beleuchtung", b: "LED-Stripes", ph: "z. B. Paulmann MaxLED 1000 3000 K", einheit: "m" },
+  { key: "lednetzteil", gruppe: "Beleuchtung", b: "LED-Netzteile / Treiber", ph: "z. B. Mean Well LPV-100-24" }
 ];
 const AMP = (liste) => liste.map((a) => a + " A");
 const QUERSCHNITTE = ["1,5 mm²", "2,5 mm²", "4 mm²", "6 mm²", "10 mm²", "16 mm²", "25 mm²", "35 mm²"];
@@ -857,6 +858,7 @@ function stdText(kat, label) {
 const BAU_STANDARD_KATS = [
   { kat: "strahler", label: "Standard-Strahler (auch Kombination)" },
   { kat: "ledstripe", label: "Standard-LED-Stripe" },
+  { kat: "lednetzteil", label: "Standard-LED-Netzteil" },
   { kat: "praesenz", label: "Standard-Präsenzmelder" },
   { kat: "bewegung", label: "Standard-Bewegungsmelder" }
 ];
@@ -1733,6 +1735,21 @@ function renderSchaltungen() {
         kat: "ledstripe", wert: st.typ, label: "Typ LED-Stripe", leerText: stdText("ledstripe", "Typ LED-Stripe"),
         onChange: ({ name, nr }) => { st.typ = name; st.nr = nr; autosave(); }
       }));
+      // Aufmaßsoftware: Netzteil(e) direkt zum LED-Stripe
+      box.appendChild(baueZaehler("Netzteile", st.nt || 0, 0, (v) => {
+        const vorher = st.nt || 0;
+        st.nt = v;
+        autosave();
+        if ((vorher > 0) !== (v > 0)) renderSchaltungen();
+      }));
+      if (st.nt > 0) {
+        const np = baueProduktAuswahl({
+          kat: "lednetzteil", wert: st.ntTyp, label: "Typ Netzteil", leerText: stdText("lednetzteil", "Typ Netzteil"),
+          onChange: ({ name, nr }) => { st.ntTyp = name; st.ntNr = nr; autosave(); }
+        });
+        np.classList.add("unter-auswahl");
+        box.appendChild(np);
+      }
       stripesEl.appendChild(box);
     });
     const plusStripe = document.createElement("button");
@@ -1975,6 +1992,19 @@ function stripeNr(st, b) {
   return std ? std.nr || "" : "";
 }
 
+// Netzteil eines LED-Stripes (eigener Typ, sonst Standard des Bauaufmaßes)
+function netzteilZeile(st, b) {
+  const std = bauStandard(b || currentBauaufmass, "lednetzteil");
+  const typ = (st.ntTyp || "").trim() || (std ? std.name.trim() : "");
+  return "LED-Netzteil" + (typ ? ` – ${typ}` : "");
+}
+
+function netzteilNr(st, b) {
+  if ((st.ntTyp || "").trim()) return st.ntNr || "";
+  const std = bauStandard(b || currentBauaufmass, "lednetzteil");
+  return std ? std.nr || "" : "";
+}
+
 function melderNr(s, b) {
   if ((s.melderTyp || "").trim()) return s.melderNr || "";
   const std = bauStandard(b || currentBauaufmass, s.melderArt === "bewegung" ? "bewegung" : "praesenz");
@@ -2022,6 +2052,7 @@ function bauRaumZeilen(b, raum) {
       }
       for (const st of s.stripes || []) {
         if (st.meter > 0) zeilen.push({ b: stripeZeile(st, b), nr: stripeNr(st, b), menge: st.meter, e: stripeEinheit(st), unter: true });
+        if (st.nt > 0) zeilen.push({ b: netzteilZeile(st, b), nr: netzteilNr(st, b), menge: st.nt, e: "Stck", unter2: true });
       }
     });
   }
@@ -2109,7 +2140,8 @@ function summenMap() {
 function bauGesamtZeilen(b) {
   const schaltungen = summenMap();
   const stromkreise = summenMap();
-  const kombiTeile = summenMap(); // v18.5: Teile der Strahler-Kombinationen
+  const kombiTeile = summenMap();
+  const netzteile = summenMap(); // LED-Netzteile zu den Stripes // v18.5: Teile der Strahler-Kombinationen
   const melderHA = summenMap();
   const auslaesseSM = summenMap();
   const stripes = summenMap();
@@ -2150,7 +2182,10 @@ function bauGesamtZeilen(b) {
           }
           else auslaesseSM.add(a.b, s[a.key], "Stck", "", idx);
         });
-        for (const x of s.stripes || []) if (x.meter > 0) stripes.add(stripeZeile(x, b), x.meter, stripeEinheit(x), stripeNr(x, b));
+        for (const x of s.stripes || []) {
+          if (x.meter > 0) stripes.add(stripeZeile(x, b), x.meter, stripeEinheit(x), stripeNr(x, b));
+          if (x.nt > 0) netzteile.add(netzteilZeile(x, b), x.nt, "Stck", netzteilNr(x, b));
+        }
       }
       const knxR = istKnxRaum(b, raum);
       for (const r of raum.rollos || []) {
@@ -2193,6 +2228,7 @@ function bauGesamtZeilen(b) {
   if (auslaesseSM.size) zeilen.push({ gruppe: "Beleuchtung – Auslässe" }, ...auslaesseSM.zeilen());
   if (kombiTeile.size) zeilen.push({ gruppe: "Strahler – Bestandteile (Kombinationen)" }, ...kombiTeile.zeilen());
   if (stripes.size) zeilen.push({ gruppe: "Beleuchtung – LED-Stripes" }, ...stripes.zeilen());
+  if (netzteile.size) zeilen.push({ gruppe: "Beleuchtung – LED-Netzteile" }, ...netzteile.zeilen());
   if (rollo.size) zeilen.push({ gruppe: "Rollos" }, ...rollo.zeilen());
   if (knx.size) zeilen.push({ gruppe: "KNX (Räume)" }, ...knx.zeilen());
   if (melder.size) zeilen.push({ gruppe: "Melder" }, ...melder.zeilen());

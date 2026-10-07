@@ -1,6 +1,6 @@
 // Service Worker für die Aufmaßsoftware (Testversion, eigener Bereich neben der bisherigen App)
 // Versionsnummer bei jedem Deploy mit Inhaltsänderungen erhöhen, damit Nutzer die neue Version bekommen.
-const CACHE_VERSION = "am2-v1";
+const CACHE_VERSION = "am2-v2";
 const CACHE_PREFIX = "am2-";
 // Eigener Cache für den großen DATANORM-Katalog (~125 MB). Wird bei
 // App-Updates NICHT gelöscht, damit nicht bei jeder neuen App-Version der
