@@ -2266,23 +2266,26 @@ function zeilenZuAutoTable(zeilen) {
 
 function bauDateiname(b) {
   const kunde = (b.kunde.name || "Bauaufmass").trim().replace(/[^a-zA-Z0-9äöüÄÖÜß _-]/g, "").replace(/\s+/g, "_");
-  return `Bauaufmass_${kunde}_${heuteISO()}.pdf`;
+  return `Bauaufmass_${b.nummer ? b.nummer + "_" : ""}${kunde}_${heuteISO()}.pdf`;
 }
 
 function erstelleBauPdf(b) {
+  // Aufmaßsoftware: Nummer beim ersten PDF vergeben (gemeinsamer Zähler mit den Aufmaßen)
+  if (!vergibNummer(b)) return;
+  if (currentBauaufmass === b) autosaveBauaufmass(); else speichereBauaufmasse();
+  if (currentBauaufmass === b) aktualisiereGesendetStatus(b);
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const marginX = 14;
   const breite = 210 - marginX * 2;
-  let y = 18;
+  let y = 20;
 
   doc.setFontSize(16);
   doc.setFont(undefined, "bold");
   doc.text("Bauaufmaß", marginX, y);
   doc.setFont(undefined, "normal");
-  doc.setFontSize(10);
-  doc.text(`Datum: ${formatDatumDE(erstelltDatumISO(b))}`, 210 - marginX, y, { align: "right" });
-  y += 9;
+  pdfKopfRechts(doc, b, `Datum: ${formatDatumDE(erstelltDatumISO(b))}`, marginX, y);
+  y += 11;
   doc.setDrawColor(210);
   doc.line(marginX, y, 210 - marginX, y);
   y += 7;
@@ -2387,7 +2390,7 @@ function erstelleBauPdf(b) {
     doc.setFontSize(8);
     doc.setTextColor(140);
     const kunde = b.kunde.name.trim();
-    if (kunde) doc.text(`Bauaufmaß ${kunde}`, marginX, 297 - 8);
+    doc.text([`Bauaufmaß ${b.nummer || ""}`.trim(), kunde, pdfMitarbeiter(b)].filter(Boolean).join(" · "), marginX, 297 - 8);
     doc.text(`Seite ${i} / ${seiten}`, 210 - marginX, 297 - 8, { align: "right" });
     doc.setTextColor(0);
   }

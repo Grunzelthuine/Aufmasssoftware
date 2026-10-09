@@ -31,6 +31,7 @@ const SYNC_SAMMLUNGEN = [
   { name: "material", key: "am2_material", typ: "array", id: (x) => x.id, neu: () => ladeDatenbank() },
   { name: "ordner", key: "am2_ordner", typ: "array", id: (x) => x.id, neu: () => ladeDatenbank() }, // v19: Baustellen-Ordner
   { name: "raumvorlagen", key: "am2_raumvorlagen", typ: "array", id: (x) => x.id, neu: () => ladeRaumVorlagen() },
+  { name: "einstellungen", key: "am2_einstellungen", typ: "map", neu: () => ladeEinstellungen() }, // Mitarbeiter + Nummernzähler
   { name: "favoriten", key: "am2_favoriten", typ: "map", neu: () => ladeFavoriten() },
   { name: "sterne", key: "am2_sterne", typ: "map", neu: () => ladeSterne() } // v16: Favoriten per Stern
 ];

@@ -670,6 +670,8 @@ function zeigeStart() {
   view.appendChild(kachel("📋", "Aufmaß", anz(aufmassListe.length, "Aufmaß", "Aufmaße") + " · Material je Baustelle", () => { aktuellerBereich = "aufmass"; zeigeUebersicht(); }));
   view.appendChild(kachel("🏠", "Bauaufmaß", anz(bauaufmasse.length, "Bauaufmaß", "Bauaufmaße") + " · Etagen, Räume, Verteilung", () => { aktuellerBereich = "bau"; zeigeUebersicht(); }));
   view.appendChild(kachel("📦", "Packliste", anz(packlisten.length, "Packliste", "Packlisten") + " · Abhaken beim Einladen", () => { aktuellerBereich = "packliste"; zeigeUebersicht(); }));
+  const ma = typeof mitarbeiterName === "function" ? mitarbeiterName() : "";
+  view.appendChild(kachel("👤", "Mitarbeiter", ma ? `${ma} · Kürzel ${mitarbeiterKuerzel()} · nächste Nr. ${vorschauNaechsteNummer()}` : "Noch kein Name hinterlegt – tippen zum Eintragen", () => oeffneEinstellungen(), ma ? "" : "kachel-hinweis"));
   view.appendChild(kachel("🗂", "Materialdatenbank", `${dbMaterial.length} Einträge · Standardmaterial, Produkte, eigene Artikel`, () => oeffneDatenbank()));
   const cloudKachel = kachel("☁", "Cloud-Sync", "", () => oeffneCloudKonto(), "kachel-cloud");
   cloudKachel.querySelector("small").id = "cloudStatus";
@@ -750,7 +752,7 @@ function zeigeUebersicht() {
     for (const a of sortiere(aufmassListe)) {
       const n = a.material.length;
       const besch = a.arbeitsbeschreibung.trim();
-      karte(a.kunde.name.trim() || "(ohne Kundenname)", `${formatDatumDE(a.datum)} · ${n} Position${n === 1 ? "" : "en"}${besch ? " · " + besch : ""}`, () => oeffneFormular(a), a.gesendet);
+      karte((a.nummer ? a.nummer + " · " : "") + (a.kunde.name.trim() || "(ohne Kundenname)"), `${formatDatumDE(a.datum)} · ${n} Position${n === 1 ? "" : "en"}${besch ? " · " + besch : ""}`, () => oeffneFormular(a), a.gesendet);
     }
   } else if (aktuellerBereich === "packliste") {
     leer.textContent = packlisten.length ? "" : "Noch keine Packliste angelegt.";
@@ -764,7 +766,7 @@ function zeigeUebersicht() {
       const nR = b.etagen.reduce((s, e) => s + e.raeume.length, 0);
       const nV = (b.verteilungen || []).length;
       const besch = b.arbeitsbeschreibung.trim();
-      karte(b.kunde.name.trim() || "(ohne Kundenname)",
+      karte((b.nummer ? b.nummer + " · " : "") + (b.kunde.name.trim() || "(ohne Kundenname)"),
         `${formatDatumDE(erstelltDatumISO(b))} · ${b.etagen.length} Etage${b.etagen.length === 1 ? "" : "n"}, ${nR} Raum${nR === 1 ? "" : "e"}${nV ? `, ${nV} Verteilung${nV === 1 ? "" : "en"}` : ""}${besch ? " · " + besch : ""}`,
         () => oeffneBauaufmass(b), b.gesendet);
     }
@@ -1148,22 +1150,25 @@ function renderPacklisteMaterial() {
 
 function dateiname(a) {
   const kunde = (a.kunde.name || "Aufmass").trim().replace(/[^a-zA-Z0-9äöüÄÖÜß _-]/g, "").replace(/\s+/g, "_");
-  return `Aufmass_${kunde}_${heuteISO()}.pdf`; // aktuelles Datum (Export-Zeitpunkt), nicht das Aufmaß-Datum
+  return `Aufmass_${a.nummer ? a.nummer + "_" : ""}${kunde}_${heuteISO()}.pdf`; // aktuelles Datum (Export-Zeitpunkt), nicht das Aufmaß-Datum
 }
 
 function erstellePdf(a) {
+  // Aufmaßsoftware: Nummer beim ersten PDF vergeben (fragt ggf. einmalig den Mitarbeiternamen ab)
+  if (!vergibNummer(a)) return;
+  if (currentAufmass === a) upsertCurrentInListe(); else speichereListe();
+  if (currentAufmass === a) aktualisiereGesendetStatus(a);
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const marginX = 14;
-  let y = 18;
+  let y = 20;
 
   doc.setFontSize(16);
   doc.setFont(undefined, "bold");
   doc.text("Materialaufmaß", marginX, y);
   doc.setFont(undefined, "normal");
-  doc.setFontSize(10);
-  doc.text(`Datum: ${formatDatumDE(a.datum)}`, 210 - marginX, y, { align: "right" });
-  y += 9;
+  pdfKopfRechts(doc, a, `Datum: ${formatDatumDE(a.datum)}`, marginX, y);
+  y += 11;
 
   doc.setDrawColor(210);
   doc.line(marginX, y, 210 - marginX, y);
@@ -1237,6 +1242,7 @@ function erstellePdf(a) {
       const pageCount = doc.internal.getNumberOfPages();
       doc.setFontSize(8);
       doc.setTextColor(140);
+      doc.text([`Aufmaß ${a.nummer || ""}`, pdfMitarbeiter(a)].filter((x) => x.trim()).join(" · "), marginX, 297 - 8);
       doc.text(
         `Seite ${doc.internal.getCurrentPageInfo().pageNumber} / ${pageCount}`,
         210 - marginX,
@@ -1288,7 +1294,8 @@ function aktualisiereGesendetStatus(obj) {
   el.innerHTML = "";
   el.classList.toggle("ist-gesendet", !!obj.gesendet);
   const text = document.createElement("span");
-  text.textContent = obj.gesendet ? `✓ Gesendet am ${formatZeitDE(obj.gesendet)}` : "Noch nicht gesendet";
+  const nr = obj.nummer ? `Nr. ${obj.nummer} · ` : "";
+  text.textContent = nr + (obj.gesendet ? `✓ Gesendet am ${formatZeitDE(obj.gesendet)}` : (obj.nummer ? "noch nicht gesendet" : "Nummer wird beim ersten PDF vergeben"));
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "btn-link-accent";

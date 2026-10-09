@@ -865,3 +865,8 @@ main#app { padding-top: calc(var(--header-h) + var(--safe-top) + 14px); }
 .ms-menge-ok { flex: 1; }
 .ms-ok { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; padding: 9px 12px; border-radius: 10px; background: #ecf8f0; border: 1px solid #9fd8b0; color: #1e6b3a; font-size: 0.88rem; font-weight: 600; }
 .ms-ok .btn-link-accent { white-space: nowrap; }
+
+/* Mitarbeiter / Aufmaßnummer */
+.kachel-hinweis { border-color: #f5d79e; background: #fff7e6; }
+.einstellungen-karte { padding: 14px; display: grid; gap: 10px; }
+.einstellungen-karte input { width: 100%; }
