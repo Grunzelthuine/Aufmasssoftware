@@ -1,6 +1,7 @@
-// Service Worker für die Aufmaßsoftware (Testversion, eigener Bereich neben der bisherigen App)
+// Service Worker für die Aufmaßsoftware
+// Seit v6.2: App-Dateien NETZWERK ZUERST (Updates kommen sofort an), Zwischenspeicher nur als Offline-Fallback.
 // Versionsnummer bei jedem Deploy mit Inhaltsänderungen erhöhen, damit Nutzer die neue Version bekommen.
-const CACHE_VERSION = "am2-v6-1";
+const CACHE_VERSION = "am2-v6-2";
 const CACHE_PREFIX = "am2-";
 // Eigener Cache für den großen DATANORM-Katalog (~125 MB). Wird bei
 // App-Updates NICHT gelöscht, damit nicht bei jeder neuen App-Version der
@@ -42,56 +43,52 @@ const CORE_ASSETS = [
 // kommen (auch offline) und nicht erneut heruntergeladen werden müssen.
 
 self.addEventListener("install", (event) => {
-  // Bewusst KEIN self.skipWaiting() hier: eine neue Version soll erst
-  // aktiv werden, wenn der Nutzer im Update-Banner "Jetzt aktualisieren"
-  // klickt (siehe Message-Handler unten). Bei der allerersten Installation
-  // gibt es ohnehin noch keine aktive Version, die warten müsste.
+  // Neue Version sofort aktivieren (kein Warten auf geschlossene Tabs); app.js lädt die Seite danach neu.
+  // Dateien am HTTP-Cache vorbei holen, damit wirklich der neue Stand im Cache landet.
   event.waitUntil(
-    caches.open(CACHE_VERSION).then((cache) => cache.addAll(CORE_ASSETS))
+    caches.open(CACHE_VERSION)
+      .then((cache) => cache.addAll(CORE_ASSETS.map((u) => new Request(u, { cache: "reload" }))))
+      .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      // nur eigene alte Caches löschen – die bisherige App (gleiche Domain) und der gemeinsame Katalog bleiben
+      // nur eigene alte Caches löschen – die bisherige App (gleiche Domain) und der Katalog bleiben
       Promise.all(keys.filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE_VERSION && k !== KATALOG_CACHE && k !== "am2-katalog-lokal").map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
 
-// Wird von app.js aufgerufen, wenn der Nutzer im Update-Banner bestätigt.
+// Weiterhin unterstützt (ältere app.js-Versionen schicken das nach Klick auf das Update-Banner).
 self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "SKIP_WAITING") {
-    self.skipWaiting();
-  }
+  if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
-// Cache-first, damit die App auf der Baustelle auch ohne Netz zuverlässig läuft.
+// Netzwerk zuerst: immer am HTTP-Cache vorbei beim Server nachfragen (GitHub Pages cached sonst ~10 Min.).
+// Ist die Verbindung weg oder antwortet der Server nicht binnen 4 s, kommt die gespeicherte Kopie
+// (Baustelle ohne Netz). Die frische Antwort landet dabei trotzdem im Cache.
+const NETZ_TIMEOUT_MS = 4000;
+async function netzwerkZuerst(req) {
+  const cache = await caches.open(CACHE_VERSION);
+  const cached = await cache.match(req, { ignoreSearch: req.mode === "navigate" });
+  const netz = fetch(req, { cache: "no-cache" }).then((response) => {
+    if (response && response.status === 200 && response.type === "basic") cache.put(req, response.clone()).catch(() => {});
+    return response;
+  });
+  if (!cached) return netz;
+  const zeitlimit = new Promise((resolve) => setTimeout(() => resolve(cached), NETZ_TIMEOUT_MS));
+  return Promise.race([netz.catch(() => cached), zeitlimit]);
+}
+
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
   // Fremde Adressen (Firebase/Google-Server für Anmeldung + Cloud-Sync) nie über den Cache
   if (url.origin !== self.location.origin) return;
 
-  // Firebase-Konfiguration: Netzwerk zuerst, damit eine nachträglich eingetragene
-  // Konfiguration ohne neue CACHE_VERSION ankommt; offline aus dem Cache.
-  if (url.pathname.endsWith("/firebase-config.js")) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match(event.request))
-    );
-    return;
-  }
-
-  // Katalog-Chunks: Cache-first im eigenen Katalog-Cache
+  // Katalog-Chunks (groß, Adresse enthält ?v=<Version>): Cache-first im eigenen Katalog-Cache
   if (url.pathname.includes("/materials-chunks/materials-chunk-")) {
     event.respondWith(
       caches.open(KATALOG_CACHE).then((cache) =>
@@ -109,35 +106,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Katalog-Manifest: Netzwerk zuerst (klein), damit ein neuer Katalog erkannt
-  // wird; offline aus dem Cache.
-  if (url.pathname.endsWith("/materials-chunks/materials-manifest.json")) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_VERSION).then((cache) => cache.put(url.pathname, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match(url.pathname))
-    );
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200 && response.type === "basic") {
-            const clone = response.clone();
-            caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => cached);
-    })
-  );
+  // Alles andere (index.html, app.js, style.css, Manifest, Firebase-Konfiguration, Vendor …): Netzwerk zuerst
+  event.respondWith(netzwerkZuerst(event.request).catch(() => caches.match(event.request, { ignoreSearch: true })));
 });
