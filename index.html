@@ -4,23 +4,76 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Aufmaßsoftware</title>
-<meta name="theme-color" content="#152238">
+<meta name="theme-color" content="#ffffff">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Aufmaß">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M6.657 18c-2.572 0-4.657-2.007-4.657-4.483c0-2.475 2.085-4.482 4.657-4.482c.393-1.762 1.794-3.2 3.675-3.773c1.88-.572 3.956-.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 1.927-1.551 3.487-3.465 3.487h-11.878"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8.1 8.1 0 0 0-15.5-2m-.5-4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4l10.5-10.5a2.828 2.828 0 1 0-4-4l-10.5 10.5v4"/><path d="M13.5 6.5l4 4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7v-3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></symbol>
+  <symbol id="i-restore" viewBox="0 0 24 24"><path d="M9 14l-4-4l4-4"/><path d="M5 10h11a4 4 0 1 1 0 8h-1"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M3 12h1m8-9v1m8 8h1m-9 8v1m-6.4-15.4l.7.7m12.1-.7l-.7.7m0 11.4l.7.7m-12.1-.7l-.7.7"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37c1 .608 2.296.07 2.572-1.065"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6a8 3 0 0 0 16 0v-6"/><path d="M4 12v6a8 3 0 0 0 16 0v-6"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></symbol>
+  <symbol id="i-export" viewBox="0 0 24 24"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M11.5 21h-4.5a2 2 0 0 1-2-2v-14a2 2 0 0 1 2-2h7l5 5v5m-5 6h7m-3-3l3 3l-3 3"/></symbol>
+  <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-10"/><path d="M10 12h4"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M8 21h8"/><path d="M12 17v4"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M5 6v.01"/><path d="M5 12v.01"/><path d="M5 18v.01"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 6l-6 6l6 6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5l10-10"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636-2.87l-8.106-13.536a1.914 1.914 0 0 0-3.274 0z"/><path d="M12 16h.01"/></symbol>
+  <symbol id="i-pencil-plus" viewBox="0 0 24 24"><path d="M4 20h4l10.5-10.5a2.828 2.828 0 1 0-4-4l-10.5 10.5v4"/><path d="M13.5 6.5l4 4"/><path d="M16 19h6"/><path d="M19 16v6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="M21 21l-6-6"/></symbol>
+  <symbol id="i-package" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9l-8 4.5l-8-4.5v-9l8-4.5"/><path d="M12 12l8-4.5"/><path d="M12 12v9"/><path d="M12 12l-8-4.5"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><path d="M9 5h-2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-12a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12h.01"/><path d="M13 12h2"/><path d="M9 16h.01"/><path d="M13 16h2"/></symbol>
+  <symbol id="i-ruler" viewBox="0 0 24 24"><path d="M5 4h14a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-7a1 1 0 0 0-1 1v7a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1v-14a1 1 0 0 1 1-1"/><path d="M4 8h2"/><path d="M4 12h3"/><path d="M4 16h2"/><path d="M8 4v2"/><path d="M12 4v3"/><path d="M16 4v2"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 11l5 5l5-5"/><path d="M12 4v12"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M5 7h1a2 2 0 0 0 2-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-14a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2"/><circle cx="12" cy="13" r="3"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 17.75l-6.172 3.245l1.179-6.873l-5-4.867l6.9-1l3.086-6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M5 12h-2l9-9l9 9h-2"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/><path d="M9 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-14a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M3 12h1m8-9v1m8 8h1m-15.4-6.4l.7.7m12.1-.7l-.7.7"/><path d="M9 16a5 5 0 1 1 6 0a3.5 3.5 0 0 0-1 3a2 2 0 0 1-4 0a3.5 3.5 0 0 0-1-3"/><path d="M9.7 17h4.6"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9.785 6l8.215 8.215l-2.054 2.054a5.81 5.81 0 1 1-8.215-8.215l2.054-2.054z"/><path d="M4 20l3.5-3.5"/><path d="M15 4l-3.5 3.5"/><path d="M20 9l-3.5 3.5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M22 12c-2.667 4.667-6 7-10 7s-7.333-2.333-10-7c2.667-4.667 6-7 10-7s7.333 2.333 10 7"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M18 11l-6-6"/><path d="M6 11l6-6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M18 13l-6 6"/><path d="M6 13l6 6"/></symbol>
+  <symbol id="i-updown" viewBox="0 0 24 24"><path d="M8 7l4-4l4 4"/><path d="M8 17l4 4l4-4"/><path d="M12 3v18"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3v7h6l-8 11v-7h-6l8-11"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21v-14l8-4v18"/><path d="M19 21v-10l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></symbol>
+</svg>
+<script>
+// Symbol als SVG-Markup (Speckmann-Symbolsatz oben)
+function ic(name) { return `<svg class="ic" aria-hidden="true"><use href="#i-${name}"/></svg>`; }
+</script>
 
 <header class="app-header">
   <div class="header-inner">
-    <button id="btnBack" class="icon-btn" hidden aria-label="Zurück">←</button>
-    <h1 id="headerTitle">Material-Aufmaß</h1>
-    <button id="btnNew" class="icon-btn" aria-label="Neu" hidden>＋</button>
+    <div class="brand">
+      <button id="btnBack" class="icon-btn" hidden aria-label="Zurück"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
+      <div class="brand-tile"><svg class="ic" aria-hidden="true"><use href="#i-clipboard"/></svg></div>
+      <div class="brand-text"><h1 id="headerTitle">Material-Aufmaß</h1><div class="sub">Elektro Speckmann GmbH</div></div>
+    </div>
+    <div class="head-btns">
+      <button id="btnNew" class="icon-btn" aria-label="Neu" hidden><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></button>
+    </div>
   </div>
 </header>
+<div class="logo-strip"><img src="assets/logo.jpg" alt="Elektro Speckmann GmbH"></div>
 
 <main id="app"></main>
 
@@ -33,7 +86,7 @@
   <div class="scanner-box">
     <div class="scanner-header">
       <span>Barcode scannen</span>
-      <button type="button" id="btnScannerSchliessen" class="icon-btn scanner-x" aria-label="Schließen">✕</button>
+      <button type="button" id="btnScannerSchliessen" class="icon-btn scanner-x" aria-label="Schließen"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div id="scannerReader"></div>
     <p id="scannerHinweis" class="hint">Kamera wird gestartet…</p>
@@ -53,7 +106,7 @@
 <template id="tpl-formular">
   <section class="view">
     <details class="section-card" open>
-      <summary>Kunde &amp; Baustelle</summary>
+      <summary><span class="ht ht-violet"><svg class="ic" aria-hidden="true"><use href="#i-users"/></svg></span><span>Kunde &amp; Baustelle</span></summary>
       <div class="field-grid">
         <label>Kunde / Firma
           <input type="text" id="f_kundeName" placeholder="z. B. Mustermann GmbH">
@@ -77,7 +130,7 @@
     </details>
 
     <details class="section-card" open>
-      <summary>Datum &amp; Arbeitsbeschreibung</summary>
+      <summary><span class="ht ht-orange"><svg class="ic" aria-hidden="true"><use href="#i-pencil-plus"/></svg></span><span>Datum &amp; Arbeitsbeschreibung</span></summary>
       <div class="field-grid">
         <label>Datum
           <input type="date" id="f_datum">
@@ -89,13 +142,13 @@
     </details>
 
     <details class="section-card" open>
-      <summary>Material hinzufügen</summary>
+      <summary><span class="ht ht-blue"><svg class="ic" aria-hidden="true"><use href="#i-package"/></svg></span><span>Material hinzufügen</span></summary>
       <div id="a_ordner" class="aufmass-ordner"></div>
       <div id="materialHinzufuegenAufmass"></div>
     </details>
 
     <details class="section-card" open>
-      <summary><span>Materialliste (<span id="anzahlPositionen">0</span>)</span></summary>
+      <summary><span class="ht ht-ink"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></span><span>Materialliste (<span id="anzahlPositionen">0</span>)</span></summary>
       <div class="table-scroll">
         <table id="materialTabelle">
           <thead>
@@ -125,8 +178,8 @@
   <div class="ms">
     <div class="ms-kopf">
       <input type="search" id="ms_suche" placeholder="Material suchen (Name, Art.-Nr., EAN)…" autocomplete="off" enterkeyhint="search">
-      <button type="button" class="btn-scan" id="ms_scan" aria-label="Barcode scannen">📷</button>
-      <button type="button" class="btn-scan" id="ms_diktatBtn" aria-label="Material diktieren" hidden>🎤</button>
+      <button type="button" class="btn-scan" id="ms_scan" aria-label="Barcode scannen"><svg class="ic" aria-hidden="true"><use href="#i-camera"/></svg></button>
+      <button type="button" class="btn-scan" id="ms_diktatBtn" aria-label="Material diktieren" hidden><svg class="ic" aria-hidden="true"><use href="#i-mic"/></svg></button>
     </div>
     <div id="ms_diktat" class="ms-diktat" hidden>
       <textarea id="md_text" rows="3" placeholder="Ins Feld tippen, Mikrofon der Tastatur antippen und sprechen, z. B.: 20 Meter NYM 3x1,5, 10 Abzweigdosen, 5 Wago Klemmen"></textarea>
@@ -141,7 +194,7 @@
 <template id="tpl-packliste">
   <section class="view">
     <details class="section-card" open>
-      <summary>Packliste</summary>
+      <summary><span class="ht ht-orange"><svg class="ic" aria-hidden="true"><use href="#i-pencil-plus"/></svg></span><span>Packliste</span></summary>
       <div class="field-grid">
         <label class="full">Bezeichnung
           <input type="text" id="p_bezeichnung" placeholder="z. B. Baustelle Müller / KW38">
@@ -153,12 +206,12 @@
     </details>
 
     <details class="section-card" open>
-      <summary>Material hinzufügen</summary>
+      <summary><span class="ht ht-blue"><svg class="ic" aria-hidden="true"><use href="#i-package"/></svg></span><span>Material hinzufügen</span></summary>
       <div id="materialHinzufuegenPackliste"></div>
     </details>
 
     <details class="section-card" open>
-      <summary><span>Noch zu packen (<span id="packlisteAnzahlOffen">0</span>)</span></summary>
+      <summary><span class="ht ht-ink"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></span><span>Noch zu packen (<span id="packlisteAnzahlOffen">0</span>)</span></summary>
       <div class="table-scroll">
         <table id="packlisteOffenTabelle">
           <thead>
@@ -177,7 +230,7 @@
     </details>
 
     <details class="section-card" id="packlisteGepacktDetails">
-      <summary><span>Bereits gepackt (<span id="packlisteAnzahlGepackt">0</span>)</span></summary>
+      <summary><span class="ht ht-green"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span><span>Bereits gepackt (<span id="packlisteAnzahlGepackt">0</span>)</span></summary>
       <div class="table-scroll">
         <table id="packlisteGepacktTabelle">
           <thead>
@@ -205,7 +258,7 @@
 <template id="tpl-bauaufmass">
   <section class="view">
     <details class="section-card" open>
-      <summary>Kunde &amp; Baustelle</summary>
+      <summary><span class="ht ht-violet"><svg class="ic" aria-hidden="true"><use href="#i-users"/></svg></span><span>Kunde &amp; Baustelle</span></summary>
       <div class="field-grid">
         <label>Kunde / Firma
           <input type="text" id="b_kundeName" placeholder="z. B. Mustermann GmbH">
@@ -229,7 +282,7 @@
     </details>
 
     <details class="section-card" open>
-      <summary>Arbeitsbeschreibung</summary>
+      <summary><span class="ht ht-orange"><svg class="ic" aria-hidden="true"><use href="#i-pencil-plus"/></svg></span><span>Arbeitsbeschreibung</span></summary>
       <label class="full">
         <textarea id="b_arbeitsbeschreibung" rows="3" placeholder="z. B. Elektroinstallation Neubau EFH"></textarea>
       </label>
@@ -237,26 +290,26 @@
     </details>
 
     <details class="section-card" open>
-      <summary>📁 Baustellen-Material &amp; Standard-Typen</summary>
+      <summary><span class="ht ht-blue"><svg class="ic" aria-hidden="true"><use href="#i-folder"/></svg></span><span>Baustellen-Material &amp; Standard-Typen</span></summary>
       <div id="b_ordner"></div>
       <div id="b_standards" class="standard-typen"></div>
     </details>
 
     <details class="section-card" open>
-      <summary>Installation, Abdeckung &amp; Rahmen</summary>
+      <summary><span class="ht ht-gray"><svg class="ic" aria-hidden="true"><use href="#i-settings"/></svg></span><span>Installation, Abdeckung &amp; Rahmen</span></summary>
       <div id="b_abdeckung" class="abdeckung-einstellung"></div>
       <p class="hint">Gilt für Steckdosen, Schalter/Taster, Datendosen, Blindabdeckungen und Rahmen. Abweichungen je Raum oder je Position im Raum möglich.</p>
     </details>
 
     <details class="section-card" open>
-      <summary>Etagen &amp; Räume</summary>
+      <summary><span class="ht ht-ink"><svg class="ic" aria-hidden="true"><use href="#i-home"/></svg></span><span>Etagen &amp; Räume</span></summary>
       <p id="b_etagenLeer" class="hint" hidden>Noch keine Etage – unten eine Etage hinzufügen.</p>
       <div id="b_etagen" class="etagen-liste"></div>
       <div id="b_etageAuswahl"></div>
     </details>
 
     <details class="section-card" open>
-      <summary>Verteilungen</summary>
+      <summary><span class="ht ht-ink"><svg class="ic" aria-hidden="true"><use href="#i-bolt"/></svg></span><span>Verteilungen</span></summary>
       <p id="b_verteilungenLeer" class="hint" hidden>Noch keine Verteilung.</p>
       <ul id="b_verteilungen" class="raum-liste"></ul>
       <div id="b_verteilungAuswahl"></div>
@@ -286,28 +339,28 @@
     <div id="r_diktat"></div>
 
     <details class="section-card" open>
-      <summary><span><span id="r_schaltTitel">Beleuchtung</span> (<span id="r_anzahlSchaltungen">0</span>)</span></summary>
+      <summary><span class="ht ht-orange"><svg class="ic" aria-hidden="true"><use href="#i-bulb"/></svg></span><span><span id="r_schaltTitel">Beleuchtung</span> (<span id="r_anzahlSchaltungen">0</span>)</span></summary>
       <p id="r_schaltungenLeer" class="hint" hidden>Noch keine Schaltung – unten Schaltungsart wählen.</p>
       <div id="r_schaltungen" class="schaltungen-liste"></div>
       <div id="r_schaltungAuswahl"></div>
     </details>
 
     <details class="section-card" id="r_rolloDetails">
-      <summary><span>Rollos (<span id="r_anzahlRollos">0</span>)</span></summary>
+      <summary><span class="ht ht-orange"><svg class="ic" aria-hidden="true"><use href="#i-updown"/></svg></span><span>Rollos (<span id="r_anzahlRollos">0</span>)</span></summary>
       <p id="r_rollosLeer" class="hint" hidden>Noch kein Rollo-Anschluss.</p>
       <div id="r_rollos" class="schaltungen-liste"></div>
       <button type="button" class="chip chip-schaltung" id="r_rolloHinzufuegen">+ Rollo-Anschluss</button>
     </details>
 
     <details class="section-card" id="r_knxDetails">
-      <summary><span>KNX (<span id="r_anzahlKnx">0</span>)</span></summary>
+      <summary><span class="ht ht-orange"><svg class="ic" aria-hidden="true"><use href="#i-bolt"/></svg></span><span>KNX (<span id="r_anzahlKnx">0</span>)</span></summary>
       <p id="r_knxLeer" class="hint" hidden>Noch keine KNX-Komponente.</p>
       <div id="r_knx" class="schaltungen-liste"></div>
       <div id="r_knxAuswahl"></div>
     </details>
 
     <details class="section-card" id="r_melderDetails">
-      <summary><span>Melder (<span id="r_anzahlMelder">0</span>)</span></summary>
+      <summary><span class="ht ht-orange"><svg class="ic" aria-hidden="true"><use href="#i-eye"/></svg></span><span>Melder (<span id="r_anzahlMelder">0</span>)</span></summary>
       <p id="r_melderLeer" class="hint" hidden>Noch kein Melder.</p>
       <div id="r_melder" class="schaltungen-liste"></div>
       <div id="r_melderAuswahl"></div>
@@ -316,7 +369,7 @@
     <div id="r_gruppen" class="view"></div>
 
     <details class="section-card" id="r_abwDetails">
-      <summary><span>Abweichende Abdeckung (<span id="r_anzahlAbw">0</span>)</span></summary>
+      <summary><span class="ht ht-gray"><svg class="ic" aria-hidden="true"><use href="#i-alert"/></svg></span><span>Abweichende Abdeckung (<span id="r_anzahlAbw">0</span>)</span></summary>
       <p class="hint">Zusätzlich zu den Zählern oben: Positionen mit anderer Abdeckung als im Raum, z. B. 2 Steckdosen in AP-Feuchtraum.</p>
       <p id="r_abwLeer" class="hint" hidden>Keine Abweichungen.</p>
       <div id="r_abw" class="schaltungen-liste"></div>
@@ -324,12 +377,12 @@
     </details>
 
     <details class="section-card">
-      <summary>Weiteres Material hinzufügen</summary>
+      <summary><span class="ht ht-blue"><svg class="ic" aria-hidden="true"><use href="#i-package"/></svg></span><span>Weiteres Material hinzufügen</span></summary>
       <div id="materialHinzufuegenRaum"></div>
     </details>
 
     <details class="section-card" open>
-      <summary><span>Material im Raum (<span id="r_anzahlMaterial">0</span>)</span></summary>
+      <summary><span class="ht ht-ink"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></span><span>Material im Raum (<span id="r_anzahlMaterial">0</span>)</span></summary>
       <div class="table-scroll">
         <table>
           <thead><tr><th>Bezeichnung</th><th>Menge</th><th>Einh.</th><th></th></tr></thead>
@@ -372,19 +425,19 @@
     </div>
 
     <details class="section-card" open>
-      <summary><span>Positionen (<span id="v_anzahlKomponenten">0</span>)</span></summary>
+      <summary><span class="ht ht-ink"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></span><span>Positionen (<span id="v_anzahlKomponenten">0</span>)</span></summary>
       <p id="v_komponentenLeer" class="hint" hidden>Noch keine Position – unten auswählen (FI, LS, Reihenklemmen, …).</p>
       <div id="v_komponenten" class="schaltungen-liste"></div>
       <div id="v_auswahl"></div>
     </details>
 
     <details class="section-card">
-      <summary>Weiteres Material hinzufügen</summary>
+      <summary><span class="ht ht-blue"><svg class="ic" aria-hidden="true"><use href="#i-package"/></svg></span><span>Weiteres Material hinzufügen</span></summary>
       <div id="materialHinzufuegenVerteilung"></div>
     </details>
 
     <details class="section-card" open>
-      <summary><span>Material (<span id="r_anzahlMaterial">0</span>)</span></summary>
+      <summary><span class="ht ht-ink"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></span><span>Material (<span id="r_anzahlMaterial">0</span>)</span></summary>
       <div class="table-scroll">
         <table>
           <thead><tr><th>Bezeichnung</th><th>Menge</th><th>Einh.</th><th></th></tr></thead>

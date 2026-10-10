@@ -1,7 +1,7 @@
 // Service Worker für die Aufmaßsoftware
 // Seit v6.2: App-Dateien NETZWERK ZUERST (Updates kommen sofort an), Zwischenspeicher nur als Offline-Fallback.
 // Versionsnummer bei jedem Deploy mit Inhaltsänderungen erhöhen, damit Nutzer die neue Version bekommen.
-const CACHE_VERSION = "am2-v6-2";
+const CACHE_VERSION = "am2-v7-0";
 const CACHE_PREFIX = "am2-";
 // Eigener Cache für den großen DATANORM-Katalog (~125 MB). Wird bei
 // App-Updates NICHT gelöscht, damit nicht bei jeder neuen App-Version der
@@ -32,7 +32,10 @@ const CORE_ASSETS = [
   "./vendor/jspdf.plugin.autotable.min.js",
   "./vendor/html5-qrcode.min.js",
   "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./icons/icon-512.png",
+  "./icons/icon-192-maskable.png",
+  "./icons/icon-512-maskable.png",
+  "./assets/logo.jpg"
 ];
 // Die "Aus Liste"-Materialdaten (materials-chunks/*, insgesamt ca. 125 MB, eigener Cache s. o.)
 // werden bewusst NICHT hier in CORE_ASSETS vorab beim Install geladen –

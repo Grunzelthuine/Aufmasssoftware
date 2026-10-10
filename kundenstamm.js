@@ -98,7 +98,7 @@ function ksMeldeFehler(err) {
     ksHinweisGezeigt = true;
     const el = document.createElement("div");
     el.className = "update-banner sync-hinweis";
-    el.innerHTML = `<span></span><button class="btn-danger-text" style="color:#fff">✕</button>`;
+    el.innerHTML = `<span></span><button class="btn-danger-text" style="color:#fff" aria-label="Schließen">${ic("x")}</button>`;
     el.querySelector("span").textContent = ksFehler;
     el.querySelector("button").addEventListener("click", () => el.remove());
     document.body.appendChild(el);
@@ -274,7 +274,8 @@ function bindeKundenstamm(p, kunde) {
     if (!ksKunden[custKey(q)]) {
       const li = document.createElement("li");
       li.className = "ks-neu";
-      li.textContent = `➕ „${q}“ als neuen Kunden übernehmen`;
+      li.innerHTML = `${ic("plus")}<span></span>`;
+      li.querySelector("span").textContent = `„${q}“ als neuen Kunden übernehmen`;
       li.addEventListener("click", () => neuAnlegen(q));
       liste.appendChild(li);
     }
@@ -307,7 +308,7 @@ function renderKundenstammEinstellungen(host) {
   if (!host) return;
   host.innerHTML = `
     <details class="section-card ks-verwaltung">
-      <summary><span>Kundenstamm <span class="ks-anzahl"></span></span></summary>
+      <summary><span class="ht ht-violet">${ic("users")}</span><span>Kundenstamm <span class="ks-anzahl"></span></span></summary>
       <p class="hint">Gemeinsam mit der Stundenzettel-App und allen Kollegen. Kunden werden beim Eintippen im Kundenfeld vorgeschlagen.</p>
       <p class="hint ks-fehler" hidden></p>
       <input type="search" class="ks-suche" placeholder="Kunden suchen …" autocomplete="off">
@@ -349,7 +350,7 @@ function renderKundenstammEinstellungen(host) {
           bearbeite = null; zeichne();
         });
       } else {
-        li.innerHTML = `<div class="info"><p class="kunde"></p><p class="meta"></p></div><button type="button" class="ks-ib ks-edit" aria-label="Bearbeiten">✏️</button><button type="button" class="ks-ib ks-del" aria-label="Löschen">🗑</button>`;
+        li.innerHTML = `<div class="info"><p class="kunde"></p><p class="meta"></p></div><button type="button" class="ks-ib ks-edit" aria-label="Bearbeiten">${ic("edit")}</button><button type="button" class="ks-ib ks-del" aria-label="Löschen">${ic("trash")}</button>`;
         li.querySelector(".kunde").textContent = c.name;
         li.querySelector(".meta").textContent = c.address || "(keine Adresse)";
         li.querySelector(".ks-edit").addEventListener("click", () => { bearbeite = key; zeichne(); });

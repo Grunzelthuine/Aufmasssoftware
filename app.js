@@ -201,7 +201,7 @@ function sternDatenFuerKatalog(item) {
 function bindeSternKnopf(btn, daten, onChange) {
   const zeichne = () => {
     const an = istStern(daten.key);
-    btn.textContent = an ? "★" : "☆";
+    btn.innerHTML = ic("star");
     btn.classList.add("stern-btn");
     btn.classList.toggle("aktiv", an);
     btn.setAttribute("aria-label", an ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen");
@@ -628,9 +628,9 @@ let aktuellerBereich = null;
 function setzeAnsicht(name) { ansicht = name; }
 
 const BEREICHE = {
-  aufmass: { titel: "Aufmaße", einzeln: "Aufmaß", icon: "📋", neu: () => oeffneFormular(neuesAufmass()) },
-  bau: { titel: "Bauaufmaße", einzeln: "Bauaufmaß", icon: "🏠", neu: () => oeffneBauaufmass(neuesBauaufmass()) },
-  packliste: { titel: "Packlisten", einzeln: "Packliste", icon: "📦", neu: () => oeffnePackliste(neuePackliste()) }
+  aufmass: { titel: "Aufmaße", einzeln: "Aufmaß", icon: "clipboard", neu: () => oeffneFormular(neuesAufmass()) },
+  bau: { titel: "Bauaufmaße", einzeln: "Bauaufmaß", icon: "home", neu: () => oeffneBauaufmass(neuesBauaufmass()) },
+  packliste: { titel: "Packlisten", einzeln: "Packliste", icon: "package", neu: () => oeffnePackliste(neuePackliste()) }
 };
 
 // Nach dem Löschen aufrufen (vor zeigeUebersicht), damit der Autosave-Flush
@@ -675,7 +675,9 @@ function baueKachel(icon, titel, info, onClick, klasse) {
   const b = document.createElement("button");
   b.type = "button";
   b.className = "kachel " + (klasse || "");
-  b.innerHTML = `<span class="kachel-icon">${icon}</span><span class="kachel-text"><strong></strong><small></small></span><span class="chevron">›</span>`;
+  // icon: "name farbe" aus dem Speckmann-Symbolsatz, z. B. "clipboard orange"
+  const [iconName, iconFarbe] = String(icon).split(" ");
+  b.innerHTML = `<span class="kachel-icon ht ht-${iconFarbe || "gray"}">${ic(iconName)}</span><span class="kachel-text"><strong></strong><small></small></span><span class="chevron">${ic("right")}</span>`;
   b.querySelector("strong").textContent = titel;
   b.querySelector("small").textContent = info;
   b.addEventListener("click", onClick);
@@ -694,14 +696,14 @@ function zeigeStart() {
   view.className = "view";
   const anz = (n, s, p) => `${n} ${n === 1 ? s : p}`;
   const gross = "kachel-gross";
-  view.appendChild(baueKachel("📋", "Aufmaß", anz(aufmassListe.length, "Aufmaß", "Aufmaße") + " · Material je Baustelle", () => { aktuellerBereich = "aufmass"; zeigeUebersicht(); }, gross));
-  view.appendChild(baueKachel("🏠", "Bauaufmaß", anz(bauaufmasse.length, "Bauaufmaß", "Bauaufmaße") + " · Etagen, Räume, Verteilung", () => { aktuellerBereich = "bau"; zeigeUebersicht(); }, gross));
-  view.appendChild(baueKachel("📦", "Packliste", anz(packlisten.length, "Packliste", "Packlisten") + " · Abhaken beim Einladen", () => { aktuellerBereich = "packliste"; zeigeUebersicht(); }, gross));
+  view.appendChild(baueKachel("clipboard orange", "Aufmaß", anz(aufmassListe.length, "Aufmaß", "Aufmaße") + " · Material je Baustelle", () => { aktuellerBereich = "aufmass"; zeigeUebersicht(); }, gross));
+  view.appendChild(baueKachel("home orange", "Bauaufmaß", anz(bauaufmasse.length, "Bauaufmaß", "Bauaufmaße") + " · Etagen, Räume, Verteilung", () => { aktuellerBereich = "bau"; zeigeUebersicht(); }, gross));
+  view.appendChild(baueKachel("package blue", "Packliste", anz(packlisten.length, "Packliste", "Packlisten") + " · Abhaken beim Einladen", () => { aktuellerBereich = "packliste"; zeigeUebersicht(); }, gross));
   const ma = typeof mitarbeiterName === "function" ? mitarbeiterName() : "";
   const einst = document.createElement("button");
   einst.type = "button";
   einst.className = "einstellung-knopf" + (ma ? "" : " kachel-hinweis");
-  einst.textContent = ma ? "⚙ Einstellungen" : "⚙ Einstellungen – Mitarbeitername fehlt";
+  einst.innerHTML = `<span class="ht ht-gray">${ic("settings")}</span><span>${ma ? "Einstellungen" : "Einstellungen – Mitarbeitername fehlt"}</span>`;
   einst.addEventListener("click", () => oeffneEinstellungen());
   view.appendChild(einst);
   app.appendChild(view);
@@ -724,8 +726,8 @@ function zeigeUebersicht() {
   const neu = document.createElement("button");
   neu.type = "button";
   neu.className = "btn btn-primary btn-gross";
-  neu.textContent = `＋ Neues ${bereich.einzeln}`;
-  if (aktuellerBereich === "packliste") neu.textContent = "＋ Neue Packliste";
+  neu.innerHTML = `${ic("plus")}<span>Neues ${bereich.einzeln}</span>`;
+  if (aktuellerBereich === "packliste") neu.innerHTML = `${ic("plus")}<span>Neue Packliste</span>`;
   neu.addEventListener("click", bereich.neu);
   view.appendChild(neu);
   const ul = document.createElement("ul");
@@ -742,7 +744,7 @@ function zeigeUebersicht() {
     if (ulGesendet) return ulGesendet;
     const det = document.createElement("details");
     det.className = "gesendet-bereich";
-    det.innerHTML = `<summary>✓ Bereits gesendet (<span class="gesendet-anzahl">0</span>)</summary>`;
+    det.innerHTML = `<summary>${ic("check")}<span>Bereits gesendet (<span class="gesendet-anzahl">0</span>)</span></summary>`;
     ulGesendet = document.createElement("ul");
     ulGesendet.className = "card-list";
     det.appendChild(ulGesendet);
@@ -752,7 +754,7 @@ function zeigeUebersicht() {
   const karte = (titel, meta, onClick, gesendet) => {
     const li = document.createElement("li");
     li.className = "aufmass-card" + (gesendet ? " gesendet" : "");
-    li.innerHTML = `<div class="info"><p class="kunde"></p><p class="meta"></p></div><span class="chevron">›</span>`;
+    li.innerHTML = `<div class="info"><p class="kunde"></p><p class="meta"></p></div><span class="chevron">${ic("right")}</span>`;
     li.querySelector(".kunde").textContent = titel;
     li.querySelector(".meta").textContent = meta;
     if (gesendet) {
@@ -936,9 +938,9 @@ function baueMengeZelle(m, onChange) {
     : "";
   td.innerHTML = `
     <div class="menge-control">
-      <button type="button" class="btn-qty" data-action="dec" aria-label="Menge verringern">−</button>
+      <button type="button" class="btn-qty" data-action="dec" aria-label="Menge verringern">${ic("minus")}</button>
       <input type="number" step="any" min="0" value="${m.menge}" class="menge-input" inputmode="decimal">
-      <button type="button" class="btn-qty" data-action="inc" aria-label="Menge erhöhen">+</button>
+      <button type="button" class="btn-qty" data-action="inc" aria-label="Menge erhöhen">${ic("plus")}</button>
     </div>
     ${meterZeile}
   `;
@@ -1030,7 +1032,7 @@ function renderMaterialTabelle() {
 
     const tdDel = document.createElement("td");
     tdDel.className = "col-del";
-    tdDel.innerHTML = `<button class="btn-danger-text" type="button">✕</button>`;
+    tdDel.innerHTML = `<button class="btn-danger-text" type="button" aria-label="Entfernen">${ic("trash")}</button>`;
     tdDel.querySelector("button").addEventListener("click", () => {
       currentAufmass.material = currentAufmass.material.filter((x) => x.id !== m.id);
       renderMaterialTabelle();
@@ -1113,7 +1115,7 @@ function bauePacklisteZeile(m, istGepackt) {
   checkBtn.type = "button";
   checkBtn.className = "check-btn" + (istGepackt ? " checked" : "");
   checkBtn.setAttribute("aria-label", istGepackt ? "Als noch zu packen markieren" : "Als gepackt markieren");
-  checkBtn.textContent = "✓";
+  checkBtn.innerHTML = ic("check");
   checkBtn.addEventListener("click", () => {
     m.erledigt = !m.erledigt;
     renderPacklisteMaterial();
@@ -1135,7 +1137,7 @@ function bauePacklisteZeile(m, istGepackt) {
 
   const tdDel = document.createElement("td");
   tdDel.className = "col-del";
-  tdDel.innerHTML = `<button class="btn-danger-text" type="button">✕</button>`;
+  tdDel.innerHTML = `<button class="btn-danger-text" type="button" aria-label="Entfernen">${ic("trash")}</button>`;
   tdDel.querySelector("button").addEventListener("click", () => {
     currentPackliste.material = currentPackliste.material.filter((x) => x.id !== m.id);
     renderPacklisteMaterial();

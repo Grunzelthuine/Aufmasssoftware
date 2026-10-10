@@ -314,7 +314,7 @@ function zeigeSyncHinweis(text, onNeuLaden) {
     el.className = "update-banner sync-hinweis";
     document.body.appendChild(el);
   }
-  el.innerHTML = `<span></span><button class="btn btn-secondary">Neu laden</button><button class="btn-danger-text" style="color:#fff">✕</button>`;
+  el.innerHTML = `<span></span><button class="btn btn-secondary">Neu laden</button><button class="btn-danger-text" style="color:#fff" aria-label="Schließen">${ic("x")}</button>`;
   el.querySelector("span").textContent = text;
   el.hidden = false;
   el.querySelectorAll("button")[0].addEventListener("click", () => { el.hidden = true; onNeuLaden(); });
@@ -416,13 +416,13 @@ function authFehlerText(err) {
 /* ---------- Oberfläche ---------- */
 
 function cloudStatusText() {
-  if (!cloud.konfiguriert) return { text: "☁ Cloud-Sync nicht eingerichtet", klasse: "aus" };
-  if (!cloud.user) return { text: "☁ Cloud-Sync: nicht angemeldet – tippen zum Anmelden", klasse: "aus" };
+  if (!cloud.konfiguriert) return { text: "Cloud-Sync nicht eingerichtet", klasse: "aus" };
+  if (!cloud.user) return { text: "Cloud-Sync: nicht angemeldet – tippen zum Anmelden", klasse: "aus" };
   const n = anzahlAusstehend();
-  if (cloud.fehler) return { text: "☁ " + cloud.fehler, klasse: "fehler" };
-  if (n > 0) return { text: `☁ ${cloud.user.email} · ${n} Änderung${n === 1 ? "" : "en"} noch nicht übertragen${navigator.onLine ? "" : " (offline)"}`, klasse: "wartet" };
+  if (cloud.fehler) return { text: "" + cloud.fehler, klasse: "fehler" };
+  if (n > 0) return { text: `${cloud.user.email} · ${n} Änderung${n === 1 ? "" : "en"} noch nicht übertragen${navigator.onLine ? "" : " (offline)"}`, klasse: "wartet" };
   const zeit = cloud.letzteSync ? cloud.letzteSync.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "–";
-  return { text: `☁ ${cloud.user.email} · synchronisiert ${zeit}`, klasse: "ok" };
+  return { text: `${cloud.user.email} · synchronisiert ${zeit}`, klasse: "ok" };
 }
 
 function renderCloudStatus() {

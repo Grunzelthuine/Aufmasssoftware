@@ -402,7 +402,7 @@ function baueDiktatKarte(etage, raum) {
   karte.className = "section-card diktat-karte";
   karte.open = true;
   karte.innerHTML = `
-    <summary><span>🎤 Diktat</span></summary>
+    <summary>${ic("mic")}<span>Diktat</span></summary>
     <textarea class="diktat-text" rows="3" placeholder="Ins Feld tippen, dann auf der Tastatur das Mikrofon antippen und sprechen, z. B.: 6 Steckdosen, 2 Cat 2-fach, Wechselschaltung mit 2 Deckenauslässen, Ausschaltung mit 4 Strahlern, Rollo mit Taster"></textarea>
     <div class="action-bar">
       <button type="button" class="btn btn-secondary diktat-auswerten" disabled>Auswerten</button>
@@ -628,7 +628,7 @@ function bindeMaterialDiktat(material, onHinzufuegen) {
     const undo = document.createElement("button");
     undo.type = "button";
     undo.className = "btn-danger-text";
-    undo.textContent = "↶ Rückgängig";
+    undo.innerHTML = `${ic("restore")}<span>Rückgängig</span>`;
     undo.addEventListener("click", () => {
       // „id~n“ = Teil eines aufgelösten Kombinationsprodukts (v18.5)
       for (let i = material.length - 1; i >= 0; i--) if (neueIds.includes(String(material[i].id).split("~")[0])) material.splice(i, 1);

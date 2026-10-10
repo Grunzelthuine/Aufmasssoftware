@@ -69,7 +69,7 @@ function msAusDb(m, quelle) {
     quelle, dbId: m.id, name: m.name, nr: m.nr || "", ean: m.ean || "", einheit: m.einheit || "Stck",
     kombi: typeof istKombi === "function" && istKombi(m),
     info: (typeof istKombi === "function" && istKombi(m)) ? "Kombination: " + kombiBeschreibung(m)
-      : [m.ordner ? "📁 " + ordnerName(m.ordner) : kategorieName(m.kat), m.nr && "Art.-Nr. " + m.nr, m.einheit || "Stck"].filter(Boolean).join(" · "),
+      : [m.ordner ? "Ordner " + ordnerName(m.ordner) : kategorieName(m.kat), m.nr && "Art.-Nr. " + m.nr, m.einheit || "Stck"].filter(Boolean).join(" · "),
     stern: sternDatenFuerDb(m)
   };
 }
@@ -107,7 +107,7 @@ function msSammle(q) {
     let l = sichtbar.filter((m) => m.ordner === ordnerId);
     if (worte.length) l = l.filter((m) => msPasst(worte, dbText(m)));
     const eintraege = msSortiere(l).map((m) => msAusDb(m, "db")).filter(merke);
-    if (eintraege.length) gruppen.push({ key: "baustelle", titel: "📁 " + ordnerName(ordnerId), eintraege });
+    if (eintraege.length) gruppen.push({ key: "baustelle", titel: ordnerName(ordnerId), eintraege });
   }
   // ⭐ Favoriten
   {
@@ -123,7 +123,7 @@ function msSammle(q) {
       if (merke(e)) favs.push(e);
       if (favs.length >= (worte.length ? 10 : 15)) break;
     }
-    if (favs.length) gruppen.push({ key: "favoriten", titel: "⭐ Favoriten", eintraege: favs });
+    if (favs.length) gruppen.push({ key: "favoriten", titel: "Favoriten", eintraege: favs });
   }
   if (!worte.length) {
     // Häufig benutzt (ohne Stern)
@@ -137,22 +137,22 @@ function msSammle(q) {
         return null;
       })
       .filter(Boolean).filter(merke).slice(0, 8);
-    if (haeufig.length) gruppen.push({ key: "haeufig", titel: "🕘 Häufig benutzt", eintraege: haeufig });
+    if (haeufig.length) gruppen.push({ key: "haeufig", titel: "Häufig benutzt", eintraege: haeufig });
     return { gruppen, worte };
   }
   // Meine Datenbank
   {
     const l = msSortiere(sichtbar.filter((m) => !m.ordner && msPasst(worte, dbText(m))));
     const eintraege = l.map((m) => msAusDb(m, "db")).filter(merke);
-    if (eintraege.length) gruppen.push({ key: "db", titel: "🗂 Meine Datenbank", eintraege: eintraege.slice(0, 25), mehr: Math.max(0, eintraege.length - 25) });
+    if (eintraege.length) gruppen.push({ key: "db", titel: "Meine Datenbank", eintraege: eintraege.slice(0, 25), mehr: Math.max(0, eintraege.length - 25) });
   }
   // Großhandelskatalog
   if (q.trim().length >= 2) {
     if (typeof materialDBReady !== "undefined" && !materialDBReady) {
-      gruppen.push({ key: "katalog", titel: "🏭 Großhandelskatalog", eintraege: [], hinweis: materialDBFehler || materialDBStatus });
+      gruppen.push({ key: "katalog", titel: "Großhandelskatalog", eintraege: [], hinweis: materialDBFehler || materialDBStatus });
     } else {
       const kat = sucheMaterial(q, 40).filter((a) => !a._eigen).map(msAusKatalog).filter(merke).slice(0, 20);
-      if (kat.length) gruppen.push({ key: "katalog", titel: "🏭 Großhandelskatalog", eintraege: kat });
+      if (kat.length) gruppen.push({ key: "katalog", titel: "Großhandelskatalog", eintraege: kat });
     }
   }
   return { gruppen, worte };
@@ -176,7 +176,9 @@ function msRender(q) {
     det.open = text ? true : (g.key in offen ? !!offen[g.key] : g.key === "baustelle");
     const sum = document.createElement("summary");
     sum.className = "ms-gruppe";
-    sum.textContent = g.titel + (g.eintraege.length ? ` (${g.eintraege.length}${g.mehr ? "+" : ""})` : "");
+    const gIcon = { baustelle: "folder", favoriten: "star", haeufig: "clock", db: "database", katalog: "building" }[g.key] || "list";
+    sum.innerHTML = `${ic(gIcon)}<span></span>`;
+    sum.querySelector("span").textContent = g.titel + (g.eintraege.length ? ` (${g.eintraege.length}${g.mehr ? "+" : ""})` : "");
     det.appendChild(sum);
     if (!text) det.addEventListener("toggle", () => {
       offen[g.key] = det.open;
@@ -206,7 +208,7 @@ function msRender(q) {
   } else if (!gruppen.length) {
     const p = document.createElement("p");
     p.className = "hint ms-hinweis";
-    p.textContent = "Tippen zum Suchen – Treffer kommen aus Baustellen-Ordner, Favoriten, deiner Datenbank und dem Großhandelskatalog. 📷 scannt eine EAN.";
+    p.textContent = "Tippen zum Suchen – Treffer kommen aus Baustellen-Ordner, Favoriten, deiner Datenbank und dem Großhandelskatalog. Das Kamera-Symbol scannt eine EAN.";
     erg.appendChild(p);
   }
 }
@@ -216,7 +218,7 @@ function msZeile(e) {
   li.className = "ms-zeile" + (e.quelle === "katalog" ? " katalog" : "");
   li.innerHTML = `<div class="ms-text"><strong></strong><small></small></div>
     <button type="button" class="stern-btn" aria-label="Favorit"></button>
-    <span class="ms-plus" aria-hidden="true">＋</span>`;
+    <span class="ms-plus" aria-hidden="true">${ic("plus")}</span>`;
   li.querySelector("strong").textContent = e.name;
   li.querySelector("small").textContent = e.info;
   if (e.stern) bindeSternKnopf(li.querySelector(".stern-btn"), e.stern, () => {});
@@ -239,9 +241,9 @@ function msOeffneMenge(zeile, e, mitEinheitWahl) {
     : `<span class="ms-menge-einheit-text"></span>`;
   box.innerHTML = `
     <div class="ms-menge-zeile">
-      <button type="button" class="btn-qty" data-a="minus" aria-label="weniger">−</button>
+      <button type="button" class="btn-qty" data-a="minus" aria-label="weniger">${ic("minus")}</button>
       <input type="number" class="ms-menge-input" step="any" min="0" inputmode="decimal" value="1">
-      <button type="button" class="btn-qty" data-a="plus" aria-label="mehr">＋</button>
+      <button type="button" class="btn-qty" data-a="plus" aria-label="mehr">${ic("plus")}</button>
       ${einheitHtml}
     </div>
     <div class="ms-menge-aktionen">
@@ -269,8 +271,8 @@ function msOeffneMenge(zeile, e, mitEinheitWahl) {
 function msFreiZeile(text) {
   const li = document.createElement("div");
   li.className = "ms-frei";
-  li.innerHTML = `<span class="ms-frei-text"></span><span class="ms-plus" aria-hidden="true">＋</span>`;
-  li.querySelector(".ms-frei-text").textContent = `✎ „${text}“ als eigenes Material`;
+  li.innerHTML = `<span class="ms-frei-text"></span><span class="ms-plus" aria-hidden="true">${ic("plus")}</span>`;
+  li.querySelector(".ms-frei-text").textContent = `„${text}“ als eigenes Material`;
   const einheit = /\b(nym|kabel|leitung|rohr|kanal|stripe|streifen|band|draht|litze)\b/i.test(text) ? "m" : "Stck";
   li.addEventListener("click", (ev) => {
     if (ev.target.closest(".ms-menge")) return;
@@ -362,7 +364,7 @@ function msBestaetigung(text, rueckgaengig) {
     el.className = "ms-ok";
     kopf.after(el);
   }
-  el.innerHTML = `<span></span><button type="button" class="btn-link-accent">↶ Rückgängig</button>`;
+  el.innerHTML = `<span></span><button type="button" class="btn-link-accent">${ic("restore")}<span>Rückgängig</span></button>`;
   el.querySelector("span").textContent = text;
   el.querySelector("button").addEventListener("click", () => { rueckgaengig(); el.remove(); });
   el.hidden = false;

@@ -157,7 +157,7 @@ function fuelleKategorieSelect(select, gewaehlt, mitNeu) {
   if (mitNeu) {
     const o = document.createElement("option");
     o.value = "__neu__";
-    o.textContent = "➕ Neue Kategorie…";
+    o.textContent = "＋ Neue Kategorie…";
     select.appendChild(o);
   }
   if (gewaehlt) select.value = gewaehlt;
@@ -264,7 +264,7 @@ function baueMaterialFormular({ katId, katFest, eintrag, onSave, onCancel, ordne
     <label>EAN / Art.-Nr. (optional – scannen oder eingeben)
       <div class="suche-mit-scan">
         <input type="text" class="pf-code" inputmode="numeric" autocomplete="off" placeholder="z. B. 4011377…">
-        <button type="button" class="btn-scan pf-scan" aria-label="Barcode scannen">📷</button>
+        <button type="button" class="btn-scan pf-scan" aria-label="Barcode scannen">${ic("camera")}</button>
         <button type="button" class="btn btn-secondary pf-suchen">Suchen</button>
       </div>
     </label>
@@ -440,9 +440,9 @@ function oeffneDatenbank(suchtext) {
     <div class="db-kopf">
       <input type="search" class="db-suche" placeholder="Suchen (Bezeichnung, Art.-Nr., EAN)…" autocomplete="off">
       <div class="db-aktionen">
-        <button type="button" class="btn btn-primary db-neu">＋ Material</button>
-        <button type="button" class="btn btn-secondary db-scan">📷 Scannen</button>
-        <button type="button" class="btn btn-outline-neutral db-katneu">＋ Kategorie</button>
+        <button type="button" class="btn btn-primary db-neu">${ic("plus")}Material</button>
+        <button type="button" class="btn btn-secondary db-scan">${ic("camera")}Scannen</button>
+        <button type="button" class="btn btn-outline-neutral db-katneu">${ic("plus")}Kategorie</button>
       </div>
       <div class="db-filter segment" role="radiogroup">
         <button type="button" class="segment-btn" data-f="alle">Alle</button>
@@ -548,14 +548,14 @@ function oeffneDatenbank(suchtext) {
       const plus = document.createElement("button");
       plus.type = "button";
       plus.className = "btn-link-accent";
-      plus.textContent = "＋ Material in dieser Kategorie";
+      plus.innerHTML = `${ic("plus")}<span>Material in dieser Kategorie</span>`;
       plus.addEventListener("click", () => zeigeFormular({ katId: k.id }));
       akt.appendChild(plus);
       if (KOMBI_KATEGORIEN.includes(k.id)) {
         const kombi = document.createElement("button");
         kombi.type = "button";
         kombi.className = "btn-link-accent";
-        kombi.textContent = "＋ Kombination";
+        kombi.innerHTML = `${ic("plus")}<span>Kombination</span>`;
         kombi.addEventListener("click", () => {
           formPlatz.innerHTML = "";
           formPlatz.appendChild(baueKombiFormular({
@@ -571,7 +571,7 @@ function oeffneDatenbank(suchtext) {
         const ren = document.createElement("button");
         ren.type = "button";
         ren.className = "btn-mini";
-        ren.textContent = "✎";
+        ren.innerHTML = ic("edit");
         ren.setAttribute("aria-label", "Kategorie umbenennen");
         ren.addEventListener("click", () => {
           const n = prompt("Kategorie umbenennen:", k.name);
@@ -583,7 +583,7 @@ function oeffneDatenbank(suchtext) {
       const del = document.createElement("button");
       del.type = "button";
       del.className = "btn-mini btn-mini-danger";
-      del.textContent = "🗑";
+      del.innerHTML = ic("trash");
       del.setAttribute("aria-label", "Ganze Kategorie löschen");
       del.addEventListener("click", () => {
         const anzahl = dbMaterialDerKategorie(k.id).length;
@@ -606,9 +606,9 @@ function oeffneDatenbank(suchtext) {
         li.innerHTML = `<div class="info"><strong></strong><small></small></div>
           <span class="komp-aktionen">
             <button type="button" class="stern-btn" aria-label="Favorit"></button>
-            <button type="button" class="btn-mini" aria-label="In Baustellen-Ordner verschieben">📁</button>
-            <button type="button" class="btn-mini" aria-label="Bearbeiten">✎</button>
-            <button type="button" class="btn-mini btn-mini-danger" aria-label="Löschen">✕</button>
+            <button type="button" class="btn-mini" aria-label="In Baustellen-Ordner verschieben">${ic("folder")}</button>
+            <button type="button" class="btn-mini" aria-label="Bearbeiten">${ic("edit")}</button>
+            <button type="button" class="btn-mini btn-mini-danger" aria-label="Löschen">${ic("trash")}</button>
           </span>`;
         li.querySelector("strong").textContent = m.name;
         li.querySelector("small").textContent = istKombi(m)
@@ -646,7 +646,7 @@ function oeffneDatenbank(suchtext) {
       ? (sichtbar ? `${sichtbar} benutzte Einträge (in Aufmaßen, Bauaufmaßen, Favoriten oder schon einmal hinzugefügt).` : "Noch nichts benutzt – oben auf „Alle“ tippen.")
       : worte.length
       ? `${sichtbar} Treffer`
-      : `${dbMaterial.filter((m) => !m.ordner).length} Einträge in ${alleKategorien().length} Kategorien. Kategorie antippen zum Aufklappen, ☆ = zu Favoriten.`;
+      : `${dbMaterial.filter((m) => !m.ordner).length} Einträge in ${alleKategorien().length} Kategorien. Kategorie antippen zum Aufklappen, Stern = zu Favoriten.`;
     const versteckt = dbKategorien.filter((k) => k.versteckt).length;
     if (versteckt && !worte.length) {
       const b = document.createElement("button");
@@ -671,11 +671,11 @@ function oeffneDatenbank(suchtext) {
     ordnerPlatz.innerHTML = "";
     const kopf = document.createElement("div");
     kopf.className = "db-ordner-kopf";
-    kopf.innerHTML = `<h3 class="pl-gruppe">📁 Baustellen-Ordner</h3>`;
+    kopf.innerHTML = `<h3 class="pl-gruppe">${ic("folder")}<span>Baustellen-Ordner</span></h3>`;
     const neu = document.createElement("button");
     neu.type = "button";
     neu.className = "btn-link-accent";
-    neu.textContent = "＋ Baustellen-Ordner";
+    neu.innerHTML = `${ic("plus")}<span>Baustellen-Ordner</span>`;
     neu.addEventListener("click", () => {
       const n = prompt("Name des Baustellen-Ordners (z. B. Baustelle oder Kunde):");
       const o = n && legeOrdnerAn(n);
@@ -699,14 +699,18 @@ function oeffneDatenbank(suchtext) {
       det.className = "section-card ordner-karte";
       det.open = worte.length > 0 || offeneOrdner.has(o.id);
       det.addEventListener("toggle", () => { if (det.open) offeneOrdner.add(o.id); else offeneOrdner.delete(o.id); });
-      det.innerHTML = `<summary><span></span></summary><div class="db-kat-aktionen"></div><ul class="pl-eintraege"></ul>`;
-      det.querySelector("summary span").textContent = `📁 ${o.name} (${eintraege.length})`;
+      det.innerHTML = `<summary>${ic("folder")}<span></span></summary><div class="db-kat-aktionen"></div><ul class="pl-eintraege"></ul>`;
+      det.querySelector("summary span").textContent = `${o.name} (${eintraege.length})`;
       const akt = det.querySelector(".db-kat-aktionen");
       const knopf = (text, cls, fn, aria) => {
         const b = document.createElement("button");
         b.type = "button";
         b.className = cls;
-        b.textContent = text;
+        // Speckmann-Symbole statt Zeichen
+        if (text.startsWith("＋ ")) b.innerHTML = `${ic("plus")}<span>${escapeHtml(text.slice(2))}</span>`;
+        else if (text === "✎") b.innerHTML = ic("edit");
+        else if (text === "🗑") b.innerHTML = ic("trash");
+        else b.textContent = text;
         if (aria) b.setAttribute("aria-label", aria);
         b.addEventListener("click", fn);
         akt.appendChild(b);
@@ -735,9 +739,9 @@ function oeffneDatenbank(suchtext) {
         li.className = "pl-eintrag";
         li.innerHTML = `<div class="info"><strong></strong><small></small></div>
           <span class="komp-aktionen">
-            <button type="button" class="btn-mini" aria-label="In Baustellen-Ordner verschieben">📁</button>
-            <button type="button" class="btn-mini" aria-label="Bearbeiten">✎</button>
-            <button type="button" class="btn-mini btn-mini-danger" aria-label="Löschen">✕</button>
+            <button type="button" class="btn-mini" aria-label="In Baustellen-Ordner verschieben">${ic("folder")}</button>
+            <button type="button" class="btn-mini" aria-label="Bearbeiten">${ic("edit")}</button>
+            <button type="button" class="btn-mini btn-mini-danger" aria-label="Löschen">${ic("trash")}</button>
           </span>`;
         li.querySelector("strong").textContent = m.name;
         li.querySelector("small").textContent = kategorieName(m.kat) + " · " + (istKombi(m)
@@ -856,7 +860,7 @@ function baueKombiFormular({ katId, eintrag, onSave, onCancel, ordner }) {
     <strong class="kf-titel">${eintrag ? "Kombination bearbeiten" : "Neue Kombination"}</strong>
     <p class="hint">Zum Beispiel Strahlergehäuse und Leuchtmittel. Teile aus der Datenbank oder dem Katalog suchen oder frei eintippen.</p>
     <div class="kf-teile"></div>
-    <button type="button" class="btn-link-accent kf-plus">＋ weiteres Teil</button>
+    <button type="button" class="btn-link-accent kf-plus">${ic("plus")}<span>weiteres Teil</span></button>
     <label>Bezeichnung der Kombination
       <input type="text" class="kf-name" placeholder="wird aus den Teilen vorgeschlagen" autocomplete="off">
     </label>
@@ -883,7 +887,7 @@ function baueKombiFormular({ katId, eintrag, onSave, onCancel, ordner }) {
       const box = document.createElement("div");
       box.className = "kombi-teil";
       box.innerHTML = `
-        <div class="stripe-kopf"><span>Teil ${i + 1}</span>${teile.length > 2 ? '<button type="button" class="btn-danger-text" aria-label="Teil entfernen">✕</button>' : ""}</div>
+        <div class="stripe-kopf"><span>Teil ${i + 1}</span>${teile.length > 2 ? `<button type="button" class="btn-danger-text" aria-label="Teil entfernen">${ic("trash")}</button>` : ""}</div>
         <input type="search" class="kt-name" placeholder="${i === 0 ? "z. B. Einbaurahmen / Gehäuse" : "z. B. GU10 LED 5W 3000K"}" autocomplete="off">
         <ul class="suggest-list kt-treffer" hidden></ul>
         <small class="kt-nr muted"></small>`;
@@ -1026,7 +1030,7 @@ function ordnerCheckboxHtml(ordnerId) {
   const gueltig = ordnerId && dbOrdner.some((o) => o.id === ordnerId) ? ordnerId : "";
   const opts = [`<option value=""${gueltig ? "" : " selected"}>Allgemeines Material</option>`]
     .concat(dbOrdner.slice().sort((a, b) => a.name.localeCompare(b.name, "de"))
-      .map((o) => `<option value="${escapeHtml(o.id)}"${o.id === gueltig ? " selected" : ""}>📁 ${escapeHtml(o.name)} (nur diese Baustelle)</option>`));
+      .map((o) => `<option value="${escapeHtml(o.id)}"${o.id === gueltig ? " selected" : ""}>${escapeHtml(o.name)} (nur diese Baustelle)</option>`));
   return `<label class="pf-ordner-wrap">Ablegen in <select class="pf-ordner">${opts.join("")}</select></label>`;
 }
 
@@ -1043,7 +1047,7 @@ function baueVerschiebenAuswahl(m, onFertig) {
   const add = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t; sel.appendChild(o); };
   add("__x__", "Verschieben nach …");
   if (m.ordner) add("", "Allgemeines Material");
-  for (const o of dbOrdner.slice().sort((a, b) => a.name.localeCompare(b.name, "de"))) if (o.id !== m.ordner) add(o.id, "📁 " + o.name);
+  for (const o of dbOrdner.slice().sort((a, b) => a.name.localeCompare(b.name, "de"))) if (o.id !== m.ordner) add(o.id, o.name);
   add("__neu__", "＋ Neuer Baustellen-Ordner…");
   sel.addEventListener("change", () => {
     let ziel = sel.value;
@@ -1109,7 +1113,7 @@ function renderDoppelte(liste, info, neuZeichnen) {
   const gruppen = findeDoppelte();
   info.textContent = gruppen.length
     ? `${gruppen.length} mögliche Doppel-Einträge (gleicher Name, gleiche Art.-Nr. oder EAN). „Zusammenführen“ behält den Eintrag mit den meisten Angaben.`
-    : "Keine doppelten Einträge gefunden. 👍";
+    : "Keine doppelten Einträge gefunden.";
   const wertung = (m) => (m.nr ? 2 : 0) + (m.ean ? 2 : 0) + (m.kat === KAT_EIGENE ? 0 : 1) + nutzung("standard:" + m.name) / 1000;
   for (const g of gruppen) {
     g.sort((a, b) => wertung(b) - wertung(a));

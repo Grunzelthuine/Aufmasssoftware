@@ -163,9 +163,9 @@ function oeffneEinstellungen() {
   zeige();
   if (!name.value) setTimeout(() => name.focus(), 50);
   const kacheln = document.getElementById("e_kacheln");
-  if (typeof oeffneDatenbank === "function") kacheln.appendChild(baueKachel("🗂", "Materialdatenbank", `${dbMaterial.length} Einträge · Standardmaterial, Produkte, eigene Artikel`, () => oeffneDatenbank()));
+  if (typeof oeffneDatenbank === "function") kacheln.appendChild(baueKachel("database blue", "Materialdatenbank", `${dbMaterial.length} Einträge · Standardmaterial, Produkte, eigene Artikel`, () => oeffneDatenbank()));
   if (typeof oeffneCloudKonto === "function") {
-    const ck = baueKachel("☁", "Cloud-Sync", "", () => oeffneCloudKonto(), "kachel-cloud");
+    const ck = baueKachel("cloud blue", "Cloud-Sync", "", () => oeffneCloudKonto(), "kachel-cloud");
     ck.querySelector("small").id = "cloudStatus";
     kacheln.appendChild(ck);
     if (typeof renderCloudStatus === "function") renderCloudStatus();

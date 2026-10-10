@@ -564,9 +564,9 @@ function baueZaehler(label, wert, min, onChange, optionen) {
   row.innerHTML = `
     <span class="zaehler-label"></span>
     <div class="menge-control">
-      <button type="button" class="btn-qty" data-action="dec" aria-label="weniger">−</button>
+      <button type="button" class="btn-qty" data-action="dec" aria-label="weniger">${ic("minus")}</button>
       <input type="number" step="${dezimal ? "any" : "1"}" min="${min}" inputmode="${dezimal ? "decimal" : "numeric"}" class="menge-input">
-      <button type="button" class="btn-qty" data-action="inc" aria-label="mehr">+</button>
+      <button type="button" class="btn-qty" data-action="inc" aria-label="mehr">${ic("plus")}</button>
     </div>`;
   row.querySelector(".zaehler-label").textContent = label;
   const input = row.querySelector("input");
@@ -666,8 +666,8 @@ function renderKomponentenListe(container, halter, feld, typen, onChange) {
       <div class="schaltung-kopf">
         <strong></strong>
         <span class="komp-aktionen">
-          <button type="button" class="btn-link-accent komp-kopie" aria-label="Duplizieren">⧉ Kopie</button>
-          <button type="button" class="btn-danger-text" aria-label="Entfernen">✕</button>
+          <button type="button" class="btn-link-accent komp-kopie" aria-label="Duplizieren">Kopie</button>
+          <button type="button" class="btn-danger-text" aria-label="Entfernen">${ic("trash")}</button>
         </span>
       </div>
       <div class="komp-felder"></div>`;
@@ -768,9 +768,9 @@ function baueProduktAuswahl({ kat, wert, leerText, label, onChange }) {
     let ziel = select;
     const gruppe = (label) => { const g = document.createElement("optgroup"); g.label = label; select.appendChild(g); return g; };
     const ordnerListe = liste.filter((p) => p.ordner);
-    if (ordnerListe.length) ziel = gruppe("📁 " + ordnerName(ordnerListe[0].ordner));
+    if (ordnerListe.length) ziel = gruppe("Baustellen-Ordner: " + ordnerName(ordnerListe[0].ordner));
     for (const p of liste) {
-      if (ordnerListe.length && !p.ordner && ziel.label && ziel.label.startsWith("📁")) ziel = gruppe("Allgemein");
+      if (ordnerListe.length && !p.ordner && ziel.label && ziel.label.startsWith("Baustellen-Ordner: ")) ziel = gruppe("Allgemein");
       const o = document.createElement("option");
       o.value = "p:" + p.id;
       o.textContent = istKombi(p) ? `${p.name} (Kombination)` : p.name + (p.nr ? ` · ${p.nr}` : "");
@@ -913,7 +913,7 @@ function renderOrdnerAuswahl(obj, platzId, nachAenderung) {
   };
   add("", "– kein Baustellen-Ordner –");
   for (const o of dbOrdner.slice().sort((x, y) => x.name.localeCompare(y.name, "de"))) {
-    add(o.id, `📁 ${o.name} (${materialImOrdner(o.id).length} Einträge)`);
+    add(o.id, `${o.name} (${materialImOrdner(o.id).length} Einträge)`);
   }
   add("__neu__", "＋ Neuen Baustellen-Ordner anlegen…");
   select.value = obj.ordner || "";
@@ -935,7 +935,7 @@ function renderOrdnerAuswahl(obj, platzId, nachAenderung) {
       const b = document.createElement("button");
       b.type = "button";
       b.className = "chip ordner-vorschlag";
-      b.textContent = `📁 ${ordnerName(vorschlag)} verwenden? (gleiche Baustelle)`;
+      b.innerHTML = `${ic("folder")}<span>${escapeHtml(ordnerName(vorschlag))} verwenden? (gleiche Baustelle)</span>`;
       b.addEventListener("click", () => { obj.ordner = vorschlag; autosave(); neuZeichnen(); });
       platz.appendChild(b);
     }
@@ -1017,7 +1017,7 @@ function renderBauaufmassUebersicht() {
         <p class="kunde">${escapeHtml(kundeName)}</p>
         <p class="meta">${formatDatumDE(erstelltDatumISO(b))} · ${b.etagen.length} Etage${b.etagen.length === 1 ? "" : "n"}, ${nRaeume} Raum${nRaeume === 1 ? "" : "e"}${nV ? `, ${nV} Verteilung${nV === 1 ? "" : "en"}` : ""}${beschreibung ? " · " + escapeHtml(beschreibung) : ""}</p>
       </div>
-      <span class="chevron">›</span>`;
+      <span class="chevron">${ic("right")}</span>`;
     li.addEventListener("click", () => oeffneBauaufmass(b));
     listeEl.appendChild(li);
   }
@@ -1197,19 +1197,19 @@ function baueRaumSchnellleiste() {
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     if (aktion) setTimeout(aktion, 350);
   };
-  const knopf = (text, fn) => {
+  const knopf = (icon, text, fn) => {
     const b = document.createElement("button");
     b.type = "button";
-    b.className = "chip";
-    b.textContent = text;
+    b.className = "chip chip-icon";
+    b.innerHTML = `${ic(icon)}<span>${escapeHtml(text)}</span>`;
     b.addEventListener("click", fn);
     platz.appendChild(b);
   };
-  knopf("💡 Licht", () => springe(document.querySelector("#r_schaltungAuswahl select"), () => { const s = document.querySelector("#r_schaltungAuswahl select"); if (s) s.focus(); }));
-  knopf("↕ Rollo", () => springe(document.getElementById("r_rolloHinzufuegen")));
-  knopf("🔌 Installation", () => springe(document.querySelector("#r_gruppen details")));
-  knopf("👁 Melder/KNX", () => springe(document.getElementById("r_melderAuswahl")));
-  knopf("📦 Material", () => springe(document.getElementById("ms_suche"), () => { const s = document.getElementById("ms_suche"); if (s) s.focus(); }));
+  knopf("bulb", "Licht", () => springe(document.querySelector("#r_schaltungAuswahl select"), () => { const s = document.querySelector("#r_schaltungAuswahl select"); if (s) s.focus(); }));
+  knopf("updown", "Rollo", () => springe(document.getElementById("r_rolloHinzufuegen")));
+  knopf("plug", "Installation", () => springe(document.querySelector("#r_gruppen details")));
+  knopf("eye", "Melder/KNX", () => springe(document.getElementById("r_melderAuswahl")));
+  knopf("package", "Material", () => springe(document.getElementById("ms_suche"), () => { const s = document.getElementById("ms_suche"); if (s) s.focus(); }));
 }
 
 function renderRaumVorlagenVerwaltung(b) {
@@ -1221,12 +1221,12 @@ function renderRaumVorlagenVerwaltung(b) {
   const det = document.createElement("details");
   det.id = "b_vorlagen";
   det.className = "vorlagen-verwaltung";
-  det.innerHTML = `<summary>📋 Raumvorlagen (${raumVorlagen.length})</summary><ul class="pl-eintraege"></ul>`;
+  det.innerHTML = `<summary>${ic("clipboard")}<span>Raumvorlagen (${raumVorlagen.length})</span></summary><ul class="pl-eintraege"></ul>`;
   const ul = det.querySelector("ul");
   for (const v of raumVorlagen.slice().sort((x, y) => x.name.localeCompare(y.name, "de"))) {
     const li = document.createElement("li");
     li.className = "pl-eintrag";
-    li.innerHTML = `<div class="info"><strong></strong><small></small></div><span class="komp-aktionen"><button type="button" class="btn-mini btn-mini-danger" aria-label="Vorlage löschen">✕</button></span>`;
+    li.innerHTML = `<div class="info"><strong></strong><small></small></div><span class="komp-aktionen"><button type="button" class="btn-mini btn-mini-danger" aria-label="Vorlage löschen">${ic("trash")}</button></span>`;
     li.querySelector("strong").textContent = v.name;
     li.querySelector("small").textContent = raumZusammenfassung(v.raum) || "leer";
     li.querySelector("button").addEventListener("click", () => {
@@ -1263,10 +1263,10 @@ function renderEtagen() {
       <div class="etage-kopf">
         <strong class="etage-name"></strong>
         <div class="etage-aktionen">
-          <button type="button" class="btn-mini" data-a="hoch" aria-label="Nach oben" ${etageIdx === 0 ? "disabled" : ""}>↑</button>
-          <button type="button" class="btn-mini" data-a="runter" aria-label="Nach unten" ${etageIdx === b.etagen.length - 1 ? "disabled" : ""}>↓</button>
-          <button type="button" class="btn-mini" data-a="umbenennen" aria-label="Umbenennen">✎</button>
-          <button type="button" class="btn-mini btn-mini-danger" data-a="loeschen" aria-label="Etage löschen">✕</button>
+          <button type="button" class="btn-mini" data-a="hoch" aria-label="Nach oben" ${etageIdx === 0 ? "disabled" : ""}>${ic("up")}</button>
+          <button type="button" class="btn-mini" data-a="runter" aria-label="Nach unten" ${etageIdx === b.etagen.length - 1 ? "disabled" : ""}>${ic("down")}</button>
+          <button type="button" class="btn-mini" data-a="umbenennen" aria-label="Umbenennen">${ic("edit")}</button>
+          <button type="button" class="btn-mini btn-mini-danger" data-a="loeschen" aria-label="Etage löschen">${ic("trash")}</button>
         </div>
       </div>
       <ul class="raum-liste"></ul>
@@ -1301,7 +1301,7 @@ function renderEtagen() {
     for (const raum of etage.raeume) {
       const li = document.createElement("li");
       li.className = "raum-karte";
-      li.innerHTML = `<div class="info"><p class="kunde"></p><p class="meta"></p></div><span class="chevron">›</span>`;
+      li.innerHTML = `<div class="info"><p class="kunde"></p><p class="meta"></p></div><span class="chevron">${ic("right")}</span>`;
       li.querySelector(".kunde").textContent = raum.name;
       li.querySelector(".meta").textContent = raumZusammenfassung(raum);
       li.addEventListener("click", () => oeffneRaum(etage, raum));
@@ -1317,7 +1317,7 @@ function renderEtagen() {
     const schnell = [];
     if (letzter) schnell.push({ value: "__wie:" + letzter.id, text: `＝ wie „${letzter.name}“ (Kopie)` });
     if (schnell.length) gruppen.push({ label: "Schnell", optionen: schnell });
-    if (raumVorlagen.length) gruppen.push({ label: "📋 Vorlagen", optionen: raumVorlagen.slice().sort((x, y) => x.name.localeCompare(y.name, "de")).map((v) => ({ value: "__vorlage:" + v.id, text: "📋 " + v.name })) });
+    if (raumVorlagen.length) gruppen.push({ label: "Vorlagen", optionen: raumVorlagen.slice().sort((x, y) => x.name.localeCompare(y.name, "de")).map((v) => ({ value: "__vorlage:" + v.id, text: v.name })) });
     gruppen.push({ label: "Räume", optionen: BAU_RAUM_VORSCHLAEGE.map(opt) }, { label: "Weitere Vorschläge", optionen: BAU_RAUM_VORSCHLAEGE_WEITERE.map(opt) });
     karte.querySelector(".raum-add").appendChild(baueAuswahl({
       platzhalter: "＋ Raum hinzufügen…",
@@ -1364,7 +1364,7 @@ function renderVerteilungenListe() {
   for (const v of b.verteilungen) {
     const li = document.createElement("li");
     li.className = "raum-karte";
-    li.innerHTML = `<div class="info"><p class="kunde"></p><p class="meta"></p></div><span class="chevron">›</span>`;
+    li.innerHTML = `<div class="info"><p class="kunde"></p><p class="meta"></p></div><span class="chevron">${ic("right")}</span>`;
     li.querySelector(".kunde").textContent = v.name || "Verteilung";
     li.querySelector(".meta").textContent = verteilungZusammenfassung(v);
     li.addEventListener("click", () => oeffneVerteilung(v));
@@ -1605,7 +1605,7 @@ function renderAbw() {
     karte.innerHTML = `
       <div class="schaltung-kopf">
         <strong>${i + 1}. Abweichende Abdeckung</strong>
-        <button type="button" class="btn-danger-text" aria-label="Entfernen">✕</button>
+        <button type="button" class="btn-danger-text" aria-label="Entfernen">${ic("trash")}</button>
       </div>`;
     karte.querySelector(".btn-danger-text").addEventListener("click", () => {
       raum.abw = raum.abw.filter((x) => x.id !== e.id);
@@ -1648,7 +1648,7 @@ function renderSchaltungen() {
     karte.innerHTML = `
       <div class="schaltung-kopf">
         <strong>${i + 1}. ${escapeHtml(t.b)}</strong>
-        <button type="button" class="btn-danger-text" aria-label="Schaltung entfernen">✕</button>
+        <button type="button" class="btn-danger-text" aria-label="Schaltung entfernen">${ic("trash")}</button>
       </div>
       <div class="schaltung-zaehler"></div>`;
     karte.querySelector(".btn-danger-text").addEventListener("click", () => {
@@ -1718,7 +1718,7 @@ function renderSchaltungen() {
     s.stripes.forEach((st, si) => {
       const box = document.createElement("div");
       box.className = "stripe-box";
-      box.innerHTML = `<div class="stripe-kopf"><span>LED-Stripe ${si + 1}</span><button type="button" class="btn-danger-text" aria-label="LED-Stripe entfernen">✕</button></div>`;
+      box.innerHTML = `<div class="stripe-kopf"><span>LED-Stripe ${si + 1}</span><button type="button" class="btn-danger-text" aria-label="LED-Stripe entfernen">${ic("trash")}</button></div>`;
       box.querySelector("button").addEventListener("click", () => {
         s.stripes = s.stripes.filter((x) => x.id !== st.id);
         autosave();
@@ -1759,7 +1759,7 @@ function renderSchaltungen() {
     const plusStripe = document.createElement("button");
     plusStripe.type = "button";
     plusStripe.className = "btn-link-accent";
-    plusStripe.textContent = "＋ LED-Stripe";
+    plusStripe.innerHTML = `${ic("plus")}<span>LED-Stripe</span>`;
     plusStripe.addEventListener("click", () => {
       s.stripes.push({ id: neueId(), meter: 1, typ: "", nr: "" });
       autosave();
@@ -1787,7 +1787,7 @@ function renderRollos() {
     karte.innerHTML = `
       <div class="schaltung-kopf">
         <strong>${i + 1}. Rollo-Anschluss</strong>
-        <button type="button" class="btn-danger-text" aria-label="Rollo entfernen">✕</button>
+        <button type="button" class="btn-danger-text" aria-label="Rollo entfernen">${ic("trash")}</button>
       </div>
       <div class="rollo-anzahl"></div>
       <div class="rollo-seg"></div>
@@ -1856,7 +1856,7 @@ function renderRaumMaterial() {
     tr.appendChild(tdE);
     const tdDel = document.createElement("td");
     tdDel.className = "col-del";
-    tdDel.innerHTML = `<button class="btn-danger-text" type="button">✕</button>`;
+    tdDel.innerHTML = `<button class="btn-danger-text" type="button" aria-label="Entfernen">${ic("trash")}</button>`;
     tdDel.querySelector("button").addEventListener("click", () => {
       halter.material = halter.material.filter((x) => x.id !== m.id);
       renderRaumMaterial();
