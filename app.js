@@ -670,6 +670,18 @@ function aktualisiereListenansicht() {
   else if (ansicht === "liste") zeigeUebersicht();
 }
 
+// Kachel (Startseite und Einstellungen)
+function baueKachel(icon, titel, info, onClick, klasse) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "kachel " + (klasse || "");
+  b.innerHTML = `<span class="kachel-icon">${icon}</span><span class="kachel-text"><strong></strong><small></small></span><span class="chevron">›</span>`;
+  b.querySelector("strong").textContent = titel;
+  b.querySelector("small").textContent = info;
+  b.addEventListener("click", onClick);
+  return b;
+}
+
 function zeigeStart() {
   schliesseOffeneEintraege();
   setzeAnsicht("start");
@@ -680,26 +692,18 @@ function zeigeStart() {
   app.innerHTML = "";
   const view = document.createElement("section");
   view.className = "view";
-  const kachel = (icon, titel, info, onClick, klasse) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "kachel " + (klasse || "");
-    b.innerHTML = `<span class="kachel-icon">${icon}</span><span class="kachel-text"><strong></strong><small></small></span><span class="chevron">›</span>`;
-    b.querySelector("strong").textContent = titel;
-    b.querySelector("small").textContent = info;
-    b.addEventListener("click", onClick);
-    return b;
-  };
   const anz = (n, s, p) => `${n} ${n === 1 ? s : p}`;
-  view.appendChild(kachel("📋", "Aufmaß", anz(aufmassListe.length, "Aufmaß", "Aufmaße") + " · Material je Baustelle", () => { aktuellerBereich = "aufmass"; zeigeUebersicht(); }));
-  view.appendChild(kachel("🏠", "Bauaufmaß", anz(bauaufmasse.length, "Bauaufmaß", "Bauaufmaße") + " · Etagen, Räume, Verteilung", () => { aktuellerBereich = "bau"; zeigeUebersicht(); }));
-  view.appendChild(kachel("📦", "Packliste", anz(packlisten.length, "Packliste", "Packlisten") + " · Abhaken beim Einladen", () => { aktuellerBereich = "packliste"; zeigeUebersicht(); }));
+  const gross = "kachel-gross";
+  view.appendChild(baueKachel("📋", "Aufmaß", anz(aufmassListe.length, "Aufmaß", "Aufmaße") + " · Material je Baustelle", () => { aktuellerBereich = "aufmass"; zeigeUebersicht(); }, gross));
+  view.appendChild(baueKachel("🏠", "Bauaufmaß", anz(bauaufmasse.length, "Bauaufmaß", "Bauaufmaße") + " · Etagen, Räume, Verteilung", () => { aktuellerBereich = "bau"; zeigeUebersicht(); }, gross));
+  view.appendChild(baueKachel("📦", "Packliste", anz(packlisten.length, "Packliste", "Packlisten") + " · Abhaken beim Einladen", () => { aktuellerBereich = "packliste"; zeigeUebersicht(); }, gross));
   const ma = typeof mitarbeiterName === "function" ? mitarbeiterName() : "";
-  view.appendChild(kachel("⚙", "Einstellungen", ma ? `${ma} · nächste Nr. ${vorschauNaechsteNummer()} · Großhandelskatalog` : "Mitarbeitername fehlt – tippen zum Eintragen", () => oeffneEinstellungen(), ma ? "" : "kachel-hinweis"));
-  view.appendChild(kachel("🗂", "Materialdatenbank", `${dbMaterial.length} Einträge · Standardmaterial, Produkte, eigene Artikel`, () => oeffneDatenbank()));
-  const cloudKachel = kachel("☁", "Cloud-Sync", "", () => oeffneCloudKonto(), "kachel-cloud");
-  cloudKachel.querySelector("small").id = "cloudStatus";
-  view.appendChild(cloudKachel);
+  const einst = document.createElement("button");
+  einst.type = "button";
+  einst.className = "einstellung-knopf" + (ma ? "" : " kachel-hinweis");
+  einst.textContent = ma ? "⚙ Einstellungen" : "⚙ Einstellungen – Mitarbeitername fehlt";
+  einst.addEventListener("click", () => oeffneEinstellungen());
+  view.appendChild(einst);
   app.appendChild(view);
   window.scrollTo(0, 0);
   if (typeof renderCloudStatus === "function") renderCloudStatus();

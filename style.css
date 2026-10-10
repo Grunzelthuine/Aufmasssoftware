@@ -888,3 +888,13 @@ main#app { padding-top: calc(var(--header-h) + var(--safe-top) + 14px); }
 .ks-knoepfe { display: flex; gap: 8px; }
 .ks-fehler { color: var(--color-danger); }
 .ks-ib { background: none; border: none; font-size: 1.15rem; padding: 6px 8px; cursor: pointer; }
+
+/* Startseite: große Hauptkacheln, kleiner Einstellungen-Knopf am Ende (am2-v6) */
+.kachel-gross { padding: 26px 18px; gap: 18px; border-radius: 18px; box-shadow: 0 2px 8px rgba(16, 24, 40, 0.09); border-left: 5px solid var(--color-accent); }
+.kachel-gross .kachel-icon { flex: 0 0 68px; height: 68px; border-radius: 16px; font-size: 2.1rem; background: #fdf0d5; }
+.kachel-gross .kachel-text strong { font-size: 1.35rem; }
+.kachel-gross .kachel-text small { font-size: 0.9rem; }
+.einstellung-knopf { align-self: center; margin-top: 18px; padding: 10px 22px; font: inherit; font-size: 0.95rem; color: var(--color-text-muted); background: transparent; border: 1px solid var(--color-border); border-radius: 999px; cursor: pointer; }
+.einstellung-knopf:active { background: #eef1f6; }
+.einstellung-knopf.kachel-hinweis { color: #8a5a00; }
+.kachel-gross .kachel-text small { white-space: normal; }

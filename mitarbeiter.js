@@ -142,6 +142,7 @@ function oeffneEinstellungen() {
       <p class="hint" id="e_vorschau"></p>
       <p class="hint">Der Name steht auf jedem exportierten Aufmaß und Bauaufmaß. Die Nummer wird beim ersten PDF vergeben – fortlaufend je Jahr (Kürzel-Jahr-Nummer), gemeinsam für Aufmaße und Bauaufmaße. Einmal vergebene Nummern ändern sich nicht mehr.</p>
     </div>
+    <div id="e_kacheln" class="view"></div>
     <div id="e_kunden"></div>
     <div id="e_katalog"></div>`;
   app.appendChild(view);
@@ -161,6 +162,14 @@ function oeffneEinstellungen() {
   kuerzel.addEventListener("input", () => { kuerzel.value = kuerzel.value.toUpperCase(); speichern(); });
   zeige();
   if (!name.value) setTimeout(() => name.focus(), 50);
+  const kacheln = document.getElementById("e_kacheln");
+  if (typeof oeffneDatenbank === "function") kacheln.appendChild(baueKachel("🗂", "Materialdatenbank", `${dbMaterial.length} Einträge · Standardmaterial, Produkte, eigene Artikel`, () => oeffneDatenbank()));
+  if (typeof oeffneCloudKonto === "function") {
+    const ck = baueKachel("☁", "Cloud-Sync", "", () => oeffneCloudKonto(), "kachel-cloud");
+    ck.querySelector("small").id = "cloudStatus";
+    kacheln.appendChild(ck);
+    if (typeof renderCloudStatus === "function") renderCloudStatus();
+  }
   if (typeof renderKundenstammEinstellungen === "function") renderKundenstammEinstellungen(document.getElementById("e_kunden"));
   if (typeof renderKatalogEinstellungen === "function") renderKatalogEinstellungen(document.getElementById("e_katalog"));
 }
