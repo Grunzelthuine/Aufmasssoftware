@@ -455,7 +455,7 @@ function oeffneCloudKonto() {
   currentPackliste = null;
   currentBauaufmass = null;
   currentRaum = null;
-  zurueckAktion = zeigeStart;
+  zurueckAktion = oeffneEinstellungen;
   headerTitle.textContent = "Cloud-Sync";
   btnBack.hidden = false;
   btnNew.hidden = true;
@@ -494,14 +494,14 @@ function oeffneCloudKonto() {
     const sperre = (an) => view.querySelectorAll("button").forEach((b) => (b.disabled = an));
     view.querySelector("#cl_login").addEventListener("click", async () => {
       sperre(true);
-      try { await cloud.auth.signInWithEmailAndPassword(email.value.trim(), pw.value); zeigeStart(); }
+      try { await cloud.auth.signInWithEmailAndPassword(email.value.trim(), pw.value); oeffneEinstellungen(); }
       catch (e) { zeige(authFehlerText(e)); }
       sperre(false);
     });
     view.querySelector("#cl_register").addEventListener("click", async () => {
       if (pw.value.length < 6) { zeige("Bitte ein Passwort mit mindestens 6 Zeichen wählen."); return; }
       sperre(true);
-      try { await cloud.auth.createUserWithEmailAndPassword(email.value.trim(), pw.value); zeigeStart(); }
+      try { await cloud.auth.createUserWithEmailAndPassword(email.value.trim(), pw.value); oeffneEinstellungen(); }
       catch (e) { zeige(authFehlerText(e)); }
       sperre(false);
     });
@@ -537,7 +537,7 @@ function oeffneCloudKonto() {
     beendeAbos();
     await cloud.auth.signOut();
     if (loeschen) { loescheLokaleDaten(); initDatenbank(); }
-    zeigeStart();
+    oeffneEinstellungen();
   });
 }
 

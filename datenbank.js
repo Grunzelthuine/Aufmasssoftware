@@ -429,7 +429,7 @@ function oeffneDatenbank(suchtext) {
   currentPackliste = null;
   currentBauaufmass = null;
   currentRaum = null;
-  zurueckAktion = zeigeStart;
+  zurueckAktion = oeffneEinstellungen;
   headerTitle.textContent = "Materialdatenbank";
   btnBack.hidden = false;
   btnNew.hidden = true;
