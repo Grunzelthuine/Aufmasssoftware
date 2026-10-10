@@ -1,17 +1,10 @@
-# Aufmaßsoftware (Testversion)
+# Aufmaßsoftware
 
-Neue, vereinfachte Fassung der Aufmaß-App – läuft parallel zur bisherigen App unter
-https://grunzelthuine.github.io/Aufmasssoftware/
+Aufmaß-App (PWA) für Material- und Bauaufmaße – https://grunzelthuine.github.io/Aufmasssoftware/
 
-- Eigene Daten (lokal `am2_…`, Firebase `users/{uid}/am2_…`), getrennt von der bisherigen App.
-- Beim ersten Start werden die Daten der bisherigen App einmalig übernommen
-  (lokal vom selben Gerät, sonst nach der Anmeldung aus der Cloud – nur gelesen).
-- Gleiches Firebase-Projekt und gleiche Anmeldung wie die bisherige App.
-- Der Großhandelskatalog (~125 MB) wird aus dem Repo `Aufmass` mitbenutzt
-  (`../Aufmass/materials-chunks/`) – das alte Repo muss deshalb bestehen bleiben.
-
-Neu gegenüber der bisherigen App: ein Suchfeld für alles Material (Baustelle → Favoriten →
-Datenbank → Katalog → Freitext, 📷, 🎤), automatische Ablage in der Datenbank,
-Standard-Typen je Bauaufmaß, Raumvorlagen und „wie vorheriger Raum“, Schnellleiste im Raum,
-Filter „Benutzt“ / „Doppelte“ in der Materialdatenbank, Baustellen-Ordner auch im normalen
-Aufmaß, Aufräumen des Baustellen-Ordners nach dem Senden.
+- Daten lokal (`am2_…`) und per Cloud-Sync in Firebase (`users/{uid}/am2_…`), jeder Mitarbeiter mit eigenem Konto.
+- Großhandelskatalog im Ordner `materials-chunks/` (aus DATANORM erzeugt).
+- Neuer Katalog: in der App unter ⚙ Einstellungen → Großhandelskatalog die DATANORM-Datei (oder ZIP) einlesen,
+  „ZIP für GitHub herunterladen“, entpacken und den Ordner `materials-chunks` hier im Repo ersetzen.
+  Alternativ nur auf einem Gerät: „Nur auf diesem Gerät verwenden“.
+- Nach jeder Änderung an App-Dateien `CACHE_VERSION` in `sw.js` hochzählen, damit installierte Apps das Update bekommen.

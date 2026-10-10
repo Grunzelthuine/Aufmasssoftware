@@ -429,9 +429,13 @@ function neuePackliste() {
    Datei mit geänderter CACHE_VERSION) tatsächlich übers Netz geladen werden
    müssen. */
 
-// Aufmaßsoftware: der große Großhandelskatalog (~125 MB) wird aus der bisherigen App
-// (gleiche Domain) mitbenutzt – nicht doppelt im Repo, und der Offline-Cache wird geteilt.
-const KATALOG_BASIS = "../Aufmass/materials-chunks/";
+// Großhandelskatalog (~125 MB) liegt im eigenen Repo unter materials-chunks/.
+// Alternativ kann auf einem Gerät ein selbst eingelesener DATANORM-Katalog verwendet werden
+// (Einstellungen → Großhandelskatalog, gespeichert im Cache „am2-katalog-lokal“).
+const KATALOG_BASIS = "materials-chunks/";
+const KATALOG_LOKAL_CACHE = "am2-katalog-lokal";
+const KATALOG_LOKAL_KEY = "am2_katalog_lokal";
+let materialDBManifest = null; // { version, count, chunks, quelle: "server" | "lokal", … }
 let materialDB = [];        // Materialstamm "Aus Liste", aus den Chunk-Dateien zusammengesetzt
 let materialDBReady = false;
 let materialDBFehler = null;
@@ -458,10 +462,26 @@ async function ladeMaterialDB() {
   materialDBLaedt = true;
   materialDBFehler = null;
   try {
-    const manifestRes = await fetch(KATALOG_BASIS + "materials-manifest.json", { cache: "no-cache" })
-      .catch(() => fetch(KATALOG_BASIS + "materials-manifest.json"));
-    if (!manifestRes.ok) throw new Error("Manifest: HTTP " + manifestRes.status);
-    const manifest = await manifestRes.json();
+    let lokal = null;
+    try { lokal = JSON.parse(localStorage.getItem(KATALOG_LOKAL_KEY) || "null"); } catch (e) { lokal = null; }
+    let manifest, holeChunk;
+    if (lokal && lokal.chunks && "caches" in window) {
+      // selbst eingelesener DATANORM-Katalog auf diesem Gerät
+      manifest = { ...lokal, quelle: "lokal" };
+      const cache = await caches.open(KATALOG_LOKAL_CACHE);
+      holeChunk = async (datei) => {
+        const r = await cache.match("lokal/" + datei);
+        if (!r) throw new Error(datei + ": im Gerätespeicher nicht gefunden – Katalog bitte neu einlesen");
+        return r;
+      };
+    } else {
+      const manifestRes = await fetch(KATALOG_BASIS + "materials-manifest.json", { cache: "no-cache" })
+        .catch(() => fetch(KATALOG_BASIS + "materials-manifest.json"));
+      if (!manifestRes.ok) throw new Error("Manifest: HTTP " + manifestRes.status);
+      manifest = { ...(await manifestRes.json()), quelle: "server" };
+      holeChunk = (datei) => fetch(`${KATALOG_BASIS}${datei}?v=${encodeURIComponent(manifest.version || "")}`);
+    }
+    materialDBManifest = manifest;
     const anzahl = manifest.chunks.length;
     const teile = new Array(anzahl);
     let fertig = 0;
@@ -473,7 +493,7 @@ async function ladeMaterialDB() {
       while (naechster < anzahl) {
         const idx = naechster++;
         const datei = manifest.chunks[idx];
-        const res = await fetch(`${KATALOG_BASIS}${datei}?v=${encodeURIComponent(manifest.version || "")}`);
+        const res = await holeChunk(datei);
         if (!res.ok) throw new Error(`${datei}: HTTP ${res.status}`);
         const arr = await res.json();
         for (let i = 0; i < arr.length; i++) {
@@ -497,7 +517,7 @@ async function ladeMaterialDB() {
     materialDB = alle;
     materialDBReady = true;
     materialDBFehler = null;
-    raeumeAltenKatalogCacheAuf(manifest.version);
+    if (manifest.quelle === "server") raeumeAltenKatalogCacheAuf(manifest.version);
   } catch (e) {
     console.error("Materialstamm konnte nicht geladen werden", e);
     materialDB = [];
@@ -513,7 +533,7 @@ async function ladeMaterialDB() {
 async function raeumeAltenKatalogCacheAuf(version) {
   try {
     if (!("caches" in window) || !version) return;
-    const cache = await caches.open("aufmass-katalog");
+    const cache = await caches.open("am2-katalog");
     const keys = await cache.keys();
     const v = "v=" + encodeURIComponent(version);
     await Promise.all(keys.filter((k) => !k.url.includes(v)).map((k) => cache.delete(k)));
@@ -671,18 +691,11 @@ function zeigeStart() {
   view.appendChild(kachel("🏠", "Bauaufmaß", anz(bauaufmasse.length, "Bauaufmaß", "Bauaufmaße") + " · Etagen, Räume, Verteilung", () => { aktuellerBereich = "bau"; zeigeUebersicht(); }));
   view.appendChild(kachel("📦", "Packliste", anz(packlisten.length, "Packliste", "Packlisten") + " · Abhaken beim Einladen", () => { aktuellerBereich = "packliste"; zeigeUebersicht(); }));
   const ma = typeof mitarbeiterName === "function" ? mitarbeiterName() : "";
-  view.appendChild(kachel("👤", "Mitarbeiter", ma ? `${ma} · Kürzel ${mitarbeiterKuerzel()} · nächste Nr. ${vorschauNaechsteNummer()}` : "Noch kein Name hinterlegt – tippen zum Eintragen", () => oeffneEinstellungen(), ma ? "" : "kachel-hinweis"));
+  view.appendChild(kachel("⚙", "Einstellungen", ma ? `${ma} · nächste Nr. ${vorschauNaechsteNummer()} · Großhandelskatalog` : "Mitarbeitername fehlt – tippen zum Eintragen", () => oeffneEinstellungen(), ma ? "" : "kachel-hinweis"));
   view.appendChild(kachel("🗂", "Materialdatenbank", `${dbMaterial.length} Einträge · Standardmaterial, Produkte, eigene Artikel`, () => oeffneDatenbank()));
   const cloudKachel = kachel("☁", "Cloud-Sync", "", () => oeffneCloudKonto(), "kachel-cloud");
   cloudKachel.querySelector("small").id = "cloudStatus";
   view.appendChild(cloudKachel);
-  // Aufmaßsoftware: Hinweis Testversion / Übernahme
-  const ub = typeof uebernahmeInfo === "function" ? uebernahmeInfo() : {};
-  const hinweis = document.createElement("p");
-  hinweis.className = "hint start-hinweis";
-  hinweis.textContent = "Aufmaßsoftware (Testversion) – eigene Daten, getrennt von der bisherigen Aufmaß-App." +
-    (ub.zeit ? ` Daten aus der bisherigen App übernommen am ${formatDatumDE(ub.zeit.slice(0, 10))}.` : "");
-  view.appendChild(hinweis);
   app.appendChild(view);
   window.scrollTo(0, 0);
   if (typeof renderCloudStatus === "function") renderCloudStatus();

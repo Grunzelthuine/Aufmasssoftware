@@ -115,7 +115,7 @@ function pdfKopfRechts(doc, obj, datumText, marginX, y) {
   if (ma) doc.text(`Mitarbeiter: ${ma}`, 210 - marginX, y + 5, { align: "right" });
 }
 
-/* ---------- Einstellungen (Startseite → 👤 Mitarbeiter) ---------- */
+/* ---------- Einstellungen (Startseite → ⚙ Einstellungen) ---------- */
 
 function oeffneEinstellungen() {
   setzeAnsicht("einstellungen");
@@ -124,7 +124,7 @@ function oeffneEinstellungen() {
   currentBauaufmass = null;
   currentRaum = null;
   zurueckAktion = zeigeStart;
-  headerTitle.textContent = "Mitarbeiter";
+  headerTitle.textContent = "Einstellungen";
   btnBack.hidden = false;
   btnNew.hidden = true;
   app.innerHTML = "";
@@ -132,6 +132,7 @@ function oeffneEinstellungen() {
   view.className = "view";
   view.innerHTML = `
     <div class="section-card einstellungen-karte">
+      <strong>Mitarbeiter</strong>
       <label>Dein Name
         <input type="text" id="e_name" autocomplete="name" placeholder="z. B. Sebastian Bruns">
       </label>
@@ -140,7 +141,8 @@ function oeffneEinstellungen() {
       </label>
       <p class="hint" id="e_vorschau"></p>
       <p class="hint">Der Name steht auf jedem exportierten Aufmaß und Bauaufmaß. Die Nummer wird beim ersten PDF vergeben – fortlaufend je Jahr (Kürzel-Jahr-Nummer), gemeinsam für Aufmaße und Bauaufmaße. Einmal vergebene Nummern ändern sich nicht mehr.</p>
-    </div>`;
+    </div>
+    <div id="e_katalog"></div>`;
   app.appendChild(view);
   window.scrollTo(0, 0);
   const name = document.getElementById("e_name");
@@ -158,4 +160,5 @@ function oeffneEinstellungen() {
   kuerzel.addEventListener("input", () => { kuerzel.value = kuerzel.value.toUpperCase(); speichern(); });
   zeige();
   if (!name.value) setTimeout(() => name.focus(), 50);
+  if (typeof renderKatalogEinstellungen === "function") renderKatalogEinstellungen(document.getElementById("e_katalog"));
 }

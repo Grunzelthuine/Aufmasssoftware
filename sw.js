@@ -1,12 +1,12 @@
 // Service Worker für die Aufmaßsoftware (Testversion, eigener Bereich neben der bisherigen App)
 // Versionsnummer bei jedem Deploy mit Inhaltsänderungen erhöhen, damit Nutzer die neue Version bekommen.
-const CACHE_VERSION = "am2-v4";
+const CACHE_VERSION = "am2-v5";
 const CACHE_PREFIX = "am2-";
 // Eigener Cache für den großen DATANORM-Katalog (~125 MB). Wird bei
 // App-Updates NICHT gelöscht, damit nicht bei jeder neuen App-Version der
 // komplette Katalog erneut heruntergeladen werden muss. Die Chunk-URLs
 // enthalten ?v=<Katalog-Version>; app.js räumt alte Versionen selbst auf.
-const KATALOG_CACHE = "aufmass-katalog";
+const KATALOG_CACHE = "am2-katalog";
 const CORE_ASSETS = [
   "./",
   "./index.html",
@@ -19,6 +19,7 @@ const CORE_ASSETS = [
   "./uebernahme.js",
   "./materialsuche.js",
   "./mitarbeiter.js",
+  "./katalog.js",
   "./firebase-config.js",
   "./vendor/firebase-app-compat.js",
   "./vendor/firebase-auth-compat.js",
@@ -53,7 +54,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       // nur eigene alte Caches löschen – die bisherige App (gleiche Domain) und der gemeinsame Katalog bleiben
-      Promise.all(keys.filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE_VERSION).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE_VERSION && k !== KATALOG_CACHE && k !== "am2-katalog-lokal").map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });

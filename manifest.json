@@ -1,6 +1,6 @@
 {
   "name": "Aufmaßsoftware",
-  "short_name": "Aufmaß 2",
+  "short_name": "Aufmaß",
   "description": "Materialaufmaß für Baustellen erfassen und als PDF exportieren",
   "start_url": "./index.html",
   "scope": "./",
