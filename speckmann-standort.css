@@ -1,0 +1,14 @@
+/* Speckmann Standort-Funktionen – Ergänzung zu speckmann-design.css */
+.cust-row{display:flex; gap:8px;}
+.cust-row input{flex:1; min-width:0;}
+.near-btn{flex:0 0 48px; border:none; border-radius:12px; background:var(--blue-tint); color:var(--blue); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;}
+.near-btn svg.ic{width:21px; height:21px;}
+.near-btn.busy svg.ic, .loc-btn.busy svg.ic{animation:locpulse 1s ease-in-out infinite;}
+.suggest-head{padding:10px 14px 6px; font-size:12px; font-weight:700; color:var(--blue);}
+.suggest-note{padding:2px 14px 12px; font-size:13px; color:var(--muted); line-height:1.45;}
+.s-dist{display:inline-block; font-size:12px; font-weight:700; color:var(--blue); background:var(--blue-tint); border-radius:20px; padding:1px 8px; margin-left:4px; vertical-align:1px;}
+.loc-btn{display:inline-flex; align-items:center; gap:6px; margin-top:8px; border:none; background:var(--blue-tint); color:var(--blue);
+  border-radius:22px; padding:8px 14px; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer;}
+.loc-btn svg.ic{width:17px; height:17px;}
+.loc-btn.busy{opacity:.75;}
+@keyframes locpulse{50%{transform:scale(.8);}}

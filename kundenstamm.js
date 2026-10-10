@@ -124,6 +124,7 @@ function ksStarteSync() {
     });
     ksSpeichereLokal();
     if (ksVerwaltungRender) ksVerwaltungRender();
+    if (window.SpeckmannStandort) SpeckmannStandort.refresh(); // neue Adressen für „Kunde in der Nähe“ vorab abgleichen
     if (!snap.metadata.fromCache && !ksSyncedOnce) { ksSyncedOnce = true; ksPushLocal(); }
   }, (err) => { ksAbo = null; ksMeldeFehler(err); });
 }
@@ -220,6 +221,49 @@ function bindeKundenstamm(p, kunde) {
   liste.hidden = true;
   label.appendChild(liste);
 
+  // v7.2: Standort-Funktionen (speckmann-standort.js, wie Stundenzettel-App v30)
+  // Kundenfeld + Pin-Knopf „Kunde in der Nähe“; Knopf und Liste werden nur einmal angelegt
+  // und in das jeweils geöffnete Formular umgehängt.
+  const st = ksStandortTeile();
+  if (st) {
+    const wrap = document.createElement("div");
+    wrap.className = "cust-wrap";
+    const reihe = document.createElement("div");
+    reihe.className = "cust-row";
+    el.name.replaceWith(wrap);
+    reihe.appendChild(el.name);
+    reihe.appendChild(st.nearBtn);
+    wrap.appendChild(reihe);
+    wrap.appendChild(st.box);
+    SpeckmannStandort.hideList();
+    el.name.addEventListener("input", () => SpeckmannStandort.hideList());
+    // Kunde aus „in der Nähe“ übernehmen = wie normale Auswahl
+    ksStandortPick = (k) => { const c = ksKunden[custKey(k.name)] || k; waehle(c); };
+
+    // „Adresse aus Standort“: Die Bibliothek schreibt EINE Zeile „Straße Nr, PLZ Ort“ in ein
+    // (verstecktes) Hilfsfeld; von dort wird sie auf Straße und PLZ/Ort verteilt, Telefon bleibt.
+    const hilfsId = p.name + "_standortAdresse";
+    const hilf = document.createElement("input");
+    hilf.type = "hidden"; hilf.id = hilfsId;
+    const adrBtn = document.createElement("button");
+    adrBtn.type = "button";
+    adrBtn.className = "loc-btn";
+    adrBtn.dataset.locTarget = hilfsId;
+    adrBtn.innerHTML = `<svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg>Adresse aus Standort`;
+    const plzLabel = el.plzOrt && (el.plzOrt.closest("label") || el.plzOrt);
+    if (plzLabel) { plzLabel.after(adrBtn); adrBtn.after(hilf); }
+    // vor der Bibliothek (die am document lauscht): aktuelle Adresse ins Hilfsfeld für die Rückfrage
+    adrBtn.addEventListener("click", () => {
+      hilf.value = [el.strasse.value.trim(), el.plzOrt ? el.plzOrt.value.trim() : ""].filter(Boolean).join(", ");
+    });
+    hilf.addEventListener("change", () => {
+      const a = ksAdresseAufteilen(hilf.value);
+      setze("strasse", a.strasse);
+      if (el.plzOrt) setze("plzOrt", a.plzOrt);
+      el.strasse.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  }
+
   // Zu welchem Kunden gehört der Inhalt der Adressfelder?
   let besitzer = ksAdresseZusammen(kunde) ? custKey(kunde.name) : null;
   let blurTimer = null;
@@ -300,6 +344,52 @@ function bindeKundenstamm(p, kunde) {
   el.name.addEventListener("input", () => {
     if (besitzer && custKey(el.name.value) !== besitzer) besitzer = null;
   });
+}
+
+/* ---------- Standort-Funktionen einmalig anlegen (v7.2) ---------- */
+
+let ksStandort = null;
+let ksStandortPick = null;
+function ksStandortTeile() {
+  if (!window.SpeckmannStandort) return null;
+  if (ksStandort) return ksStandort;
+  const nearBtn = document.createElement("button");
+  nearBtn.type = "button";
+  nearBtn.className = "near-btn";
+  nearBtn.id = "nearCustBtn";
+  nearBtn.title = "Kunde in der Nähe";
+  nearBtn.setAttribute("aria-label", "Kunde in der Nähe suchen");
+  nearBtn.innerHTML = `<svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg>`;
+  const box = document.createElement("div");
+  box.className = "suggest";
+  box.id = "nearCustSuggest";
+  ksStandort = { nearBtn, box };
+  SpeckmannStandort.init({
+    getCustomers: () => Object.values(ksKunden),
+    onPick: (k) => { if (ksStandortPick) ksStandortPick(k); },
+    nearButton: nearBtn,
+    suggestBox: box,
+    toast: (text, ms) => ksToast(text, ms)
+  });
+  // Tippen in der Liste soll nicht das Kundenfeld (umgebendes label) fokussieren
+  box.addEventListener("click", (e) => e.preventDefault());
+  // normale Namensvorschläge ausblenden, wenn „in der Nähe“ gesucht wird
+  nearBtn.addEventListener("click", () => document.querySelectorAll(".ks-liste").forEach((l) => { l.hidden = true; l.innerHTML = ""; }));
+  // Liste schließen, wenn außerhalb getippt wird
+  document.addEventListener("click", (e) => {
+    if (box.classList.contains("show") && !e.target.closest(".cust-wrap")) SpeckmannStandort.hideList();
+  });
+  return ksStandort;
+}
+
+let ksToastTimer = null;
+function ksToast(text, dauer) {
+  let t = document.getElementById("ksToast");
+  if (!t) { t = document.createElement("div"); t.id = "ksToast"; t.className = "toast"; document.body.appendChild(t); }
+  t.textContent = text;
+  requestAnimationFrame(() => t.classList.add("show"));
+  clearTimeout(ksToastTimer);
+  ksToastTimer = setTimeout(() => t.classList.remove("show"), dauer || 4000);
 }
 
 /* ---------- Verwaltung (Einstellungen → Kundenstamm) ---------- */

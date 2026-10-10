@@ -1,7 +1,7 @@
 // Service Worker für die Aufmaßsoftware
 // Seit v6.2: App-Dateien NETZWERK ZUERST (Updates kommen sofort an), Zwischenspeicher nur als Offline-Fallback.
 // Versionsnummer bei jedem Deploy mit Inhaltsänderungen erhöhen, damit Nutzer die neue Version bekommen.
-const CACHE_VERSION = "am2-v7-0";
+const CACHE_VERSION = "am2-v7-2";
 const CACHE_PREFIX = "am2-";
 // Eigener Cache für den großen DATANORM-Katalog (~125 MB). Wird bei
 // App-Updates NICHT gelöscht, damit nicht bei jeder neuen App-Version der
@@ -18,6 +18,8 @@ const CORE_ASSETS = [
   "./datenbank.js",
   "./cloudsync.js",
   "./kundenstamm.js",
+  "./speckmann-standort.js",
+  "./speckmann-standort.css",
   "./uebernahme.js",
   "./materialsuche.js",
   "./mitarbeiter.js",
