@@ -646,6 +646,10 @@ function verwerfeAktuellesOhneSpeichern() {
 // Ausstehenden Autosave sofort ausführen und offene Einträge schließen
 function schliesseOffeneEintraege() {
   clearTimeout(saveTimer);
+  if (typeof kundenstammErfassen === "function") {
+    if (currentAufmass) kundenstammErfassen(currentAufmass.kunde);
+    if (currentBauaufmass) kundenstammErfassen(currentBauaufmass.kunde);
+  }
   if (typeof msSnackAus === "function") msSnackAus();
   if (currentAufmass && !istLeeresAufmass(currentAufmass)) upsertCurrentInListe();
   if (currentPackliste && !istLeerePackliste(currentPackliste)) upsertCurrentPackliste();
@@ -852,6 +856,9 @@ function bindeFormularEvents() {
     });
   }
 
+  if (typeof bindeKundenstamm === "function") {
+    bindeKundenstamm({ name: "f_kundeName", ansprechpartner: "f_ansprechpartner", strasse: "f_strasse", plzOrt: "f_plzOrt", telefon: "f_telefon" }, a.kunde);
+  }
   klonMaterialTabs("materialHinzufuegenAufmass");
   bindeMaterialAuswahl(a.material, () => {
     renderMaterialTabelle();
@@ -879,6 +886,7 @@ function bindeFormularEvents() {
   });
 
   document.getElementById("btnPdf").addEventListener("click", () => {
+    if (typeof kundenstammErfassen === "function") kundenstammErfassen(a.kunde);
     if (!istLeeresAufmass(a)) upsertCurrentInListe();
     erstellePdf(a);
   });

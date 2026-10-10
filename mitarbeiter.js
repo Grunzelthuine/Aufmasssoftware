@@ -142,6 +142,7 @@ function oeffneEinstellungen() {
       <p class="hint" id="e_vorschau"></p>
       <p class="hint">Der Name steht auf jedem exportierten Aufmaß und Bauaufmaß. Die Nummer wird beim ersten PDF vergeben – fortlaufend je Jahr (Kürzel-Jahr-Nummer), gemeinsam für Aufmaße und Bauaufmaße. Einmal vergebene Nummern ändern sich nicht mehr.</p>
     </div>
+    <div id="e_kunden"></div>
     <div id="e_katalog"></div>`;
   app.appendChild(view);
   window.scrollTo(0, 0);
@@ -160,5 +161,6 @@ function oeffneEinstellungen() {
   kuerzel.addEventListener("input", () => { kuerzel.value = kuerzel.value.toUpperCase(); speichern(); });
   zeige();
   if (!name.value) setTimeout(() => name.focus(), 50);
+  if (typeof renderKundenstammEinstellungen === "function") renderKundenstammEinstellungen(document.getElementById("e_kunden"));
   if (typeof renderKatalogEinstellungen === "function") renderKatalogEinstellungen(document.getElementById("e_katalog"));
 }

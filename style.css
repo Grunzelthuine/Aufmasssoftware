@@ -874,3 +874,17 @@ main#app { padding-top: calc(var(--header-h) + var(--safe-top) + 14px); }
 .k-ergebnis p { margin: 0 0 6px; }
 .k-beispiel { font-size: 0.75rem; white-space: pre-wrap; margin: 0 0 8px; color: var(--color-text-muted); }
 .einstellungen-karte code { font-size: 0.85em; }
+
+/* Kundenstamm (am2-v6) */
+.ks-liste li.ks-neu { color: var(--color-primary); font-weight: 600; }
+.ks-verwaltung .ks-suche { width: 100%; margin-bottom: 8px; }
+.ks-verwaltung .card-list { margin: 0; }
+.ks-zeile { display: flex; align-items: center; gap: 6px; padding: 8px 4px; border-bottom: 1px solid var(--color-border); list-style: none; }
+.ks-zeile .info { flex: 1; min-width: 0; }
+.ks-zeile .info p { margin: 0; overflow-wrap: anywhere; }
+.ks-zeile .meta { color: var(--color-text-muted); font-size: 0.82rem; }
+.ks-zeile input { width: 100%; }
+.ks-zeile:has(.ks-n) { flex-direction: column; align-items: stretch; }
+.ks-knoepfe { display: flex; gap: 8px; }
+.ks-fehler { color: var(--color-danger); }
+.ks-ib { background: none; border: none; font-size: 1.15rem; padding: 6px 8px; cursor: pointer; }

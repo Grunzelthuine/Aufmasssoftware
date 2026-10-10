@@ -1057,6 +1057,9 @@ function oeffneBauaufmass(b, scrollY) {
     el.value = getter();
     el.addEventListener("input", (e) => { setter(e.target.value); autosave(); });
   }
+  if (typeof bindeKundenstamm === "function") {
+    bindeKundenstamm({ name: "b_kundeName", ansprechpartner: "b_ansprechpartner", strasse: "b_strasse", plzOrt: "b_plzOrt", telefon: "b_telefon" }, b.kunde);
+  }
   // Baustellen-Ordner (v19) + Standard-Typen
   renderOrdnerAuswahl(b, "b_ordner");
   renderStandardTypen(b);
@@ -1098,6 +1101,7 @@ function oeffneBauaufmass(b, scrollY) {
     zeigeUebersicht();
   });
   document.getElementById("btnBauPdf").addEventListener("click", () => {
+    if (typeof kundenstammErfassen === "function") kundenstammErfassen(b.kunde);
     autosaveBauaufmass();
     erstelleBauPdf(b);
   });
