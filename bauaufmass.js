@@ -1858,7 +1858,7 @@ function renderRaumMaterial() {
     tdDel.className = "col-del";
     tdDel.innerHTML = `<button class="btn-danger-text" type="button" aria-label="Entfernen">${ic("trash")}</button>`;
     tdDel.querySelector("button").addEventListener("click", () => {
-      halter.material = halter.material.filter((x) => x.id !== m.id);
+      entferneMaterialZeile(halter.material, m.id);
       renderRaumMaterial();
       autosave();
     });

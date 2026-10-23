@@ -254,6 +254,13 @@ function nehmeInStandardmaterialAuf(katId, bezeichnung, einheit, nr, ean, ordner
 
 let html5QrcodeScanner = null;
 let barcodeScanErgebnisCallback = null;
+let scannerStopp = Promise.resolve();   // v7.3: läuft noch ein Stopp vom letzten Öffnen?
+let scannerLauf = 0;                    // zählt Öffnungen, damit alte Starts nichts mehr anfassen
+const SCANNER_KAMERA_KEY = "am2_scanner_kamera"; // gewählte Rückkamera { id, label }
+
+function scannerGespeicherteKamera() {
+  try { return JSON.parse(localStorage.getItem(SCANNER_KAMERA_KEY) || "null"); } catch (e) { return null; }
+}
 
 function oeffneBarcodeScanner(onErgebnis) {
   const overlay = document.getElementById("scannerOverlay");
@@ -267,6 +274,21 @@ function oeffneBarcodeScanner(onErgebnis) {
   overlay.hidden = false;
   hinweis.textContent = "Kamera wird gestartet…";
   manuellInput.value = "";
+  const lauf = ++scannerLauf;
+  // Erst warten, bis ein evtl. noch laufender Stopp vom letzten Mal fertig ist – sonst räumt
+  // dessen clear() das neue Kamerabild aus dem Fenster (Bild nur halb oben im Display).
+  scannerStopp.then(() => { if (lauf === scannerLauf && !overlay.hidden) starteScannerKamera(onErgebnis, scannerGespeicherteKamera()); });
+}
+
+function starteScannerKamera(onErgebnis, kamera) {
+  const hinweis = document.getElementById("scannerHinweis");
+  const lauf = scannerLauf;
+  // Jedes Mal ein frisches Element für das Kamerabild
+  const reader = document.getElementById("scannerReader");
+  reader.innerHTML = "";
+  const ziel = document.createElement("div");
+  ziel.id = "scannerReaderLauf" + lauf;
+  reader.appendChild(ziel);
 
   // Explizit alle relevanten Formate anfordern (1D-Barcodes wie EAN/Code128
   // UND QR), statt sich auf die Bibliotheks-Voreinstellung zu verlassen.
@@ -281,41 +303,96 @@ function oeffneBarcodeScanner(onErgebnis) {
     Html5QrcodeSupportedFormats.UPC_A,
     Html5QrcodeSupportedFormats.UPC_E
   ];
-  html5QrcodeScanner = new Html5Qrcode("scannerReader", { formatsToSupport: formate, verbose: false });
+  const scanner = new Html5Qrcode(ziel.id, { formatsToSupport: formate, verbose: false });
+  html5QrcodeScanner = scanner;
 
   // Etwas höhere Kamera-Auflösung anfordern, damit auch dünne Strichcode-
-  // Balken (EAN/Code128) sauber aufgelöst werden – die Standardauflösung
-  // mancher Handykameras ist dafür zu niedrig. Breiterer, flacherer Scan-
+  // Balken (EAN/Code128) sauber aufgelöst werden. Breiterer, flacherer Scan-
   // Rahmen passend zur Form eines 1D-Barcodes statt eines Quadrats.
+  // v7.3: gewählte Rückkamera (z. B. die mit Nahfokus) direkt benutzen.
+  const videoConstraints = { width: { ideal: 1920 }, height: { ideal: 1080 } };
+  if (kamera && kamera.id) videoConstraints.deviceId = { exact: kamera.id };
+  else videoConstraints.facingMode = "environment";
   const config = {
     fps: 12,
-    // Scan-Rahmen relativ zum (verkleinerten) Kamerabild
     qrbox: (w, h) => ({ width: Math.floor(Math.min(280, w * 0.85)), height: Math.floor(Math.min(130, h * 0.6)) }),
     aspectRatio: 1.7,
-    videoConstraints: {
-      facingMode: "environment",
-      width: { ideal: 1920 },
-      height: { ideal: 1080 }
-    }
+    videoConstraints
   };
 
-  html5QrcodeScanner
+  let erledigt = false;
+  scanner
     .start(
-      { facingMode: "environment" },
+      kamera && kamera.id ? { deviceId: { exact: kamera.id } } : { facingMode: "environment" },
       config,
       (decodedText) => {
+        if (erledigt) return; // mehrere Treffer kurz hintereinander nur einmal auswerten
+        erledigt = true;
         schliesseBarcodeScanner();
         onErgebnis(decodedText);
       },
       () => { /* laufender Frame ohne Treffer, kein Fehler */ }
     )
     .then(() => {
+      if (lauf !== scannerLauf || html5QrcodeScanner !== scanner) return;
+      const video = ziel.querySelector("video");
+      if (video) { video.setAttribute("playsinline", ""); video.setAttribute("muted", ""); video.muted = true; }
       hinweis.textContent = "Barcode in den Rahmen halten – ruhig, gut ausgeleuchtet und nah heranhalten.";
+      zeigeScannerKameras(onErgebnis, kamera);
     })
     .catch((err) => {
+      if (lauf !== scannerLauf) return;
+      if (kamera && kamera.id) {
+        // gespeicherte Kamera gibt es nicht (mehr) – mit der Standard-Rückkamera erneut versuchen
+        try { localStorage.removeItem(SCANNER_KAMERA_KEY); } catch (e) { /* egal */ }
+        html5QrcodeScanner = null;
+        try { scanner.clear(); } catch (e) { /* egal */ }
+        starteScannerKamera(onErgebnis, null);
+        return;
+      }
       hinweis.textContent = "Kamera konnte nicht gestartet werden (Berechtigung erteilt?).";
       console.error("Barcode-Scanner-Start fehlgeschlagen", err);
     });
+}
+
+// v7.3: Auswahl der Rückkamera (iPhone mit mehreren Linsen). Die Wahl wird gemerkt
+// und beim nächsten Öffnen sofort benutzt.
+function zeigeScannerKameras(onErgebnis, aktiv) {
+  const platz = document.getElementById("scannerKameras");
+  if (!platz || typeof Html5Qrcode.getCameras !== "function") return;
+  Html5Qrcode.getCameras().then((kameras) => {
+    const hinten = (kameras || []).filter((k) => !/front|vorder|facetime|user/i.test(k.label || ""));
+    if (hinten.length < 2 || document.getElementById("scannerOverlay").hidden) { platz.hidden = true; return; }
+    const video = document.querySelector("#scannerReader video");
+    let aktivId = aktiv && aktiv.id;
+    if (!aktivId && video && video.srcObject && video.srcObject.getVideoTracks) {
+      const t = video.srcObject.getVideoTracks()[0];
+      const s = t && t.getSettings ? t.getSettings() : null;
+      if (s && s.deviceId) aktivId = s.deviceId;
+    }
+    platz.innerHTML = `<div class="scanner-kameras-titel">Kamera wählen – wird gemerkt</div><div class="chip-row"></div>`;
+    const reihe = platz.querySelector(".chip-row");
+    hinten.forEach((k, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip" + (k.id === aktivId ? " chip-aktiv" : "");
+      b.textContent = (k.label || `Kamera ${i + 1}`).replace(/^(Rückseitige|Back)\s*/i, "") || `Kamera ${i + 1}`;
+      b.addEventListener("click", () => {
+        if (k.id === aktivId) return;
+        const neu = { id: k.id, label: k.label || "" };
+        try { localStorage.setItem(SCANNER_KAMERA_KEY, JSON.stringify(neu)); } catch (e) { /* egal */ }
+        platz.hidden = true;
+        document.getElementById("scannerHinweis").textContent = "Kamera wird gewechselt…";
+        const alt = html5QrcodeScanner;
+        html5QrcodeScanner = null;
+        const lauf = ++scannerLauf;
+        scannerStopp = alt ? Promise.resolve().then(() => alt.stop()).then(() => alt.clear()).catch(() => { try { alt.clear(); } catch (e) { /* egal */ } }) : Promise.resolve();
+        scannerStopp.then(() => { if (lauf === scannerLauf && !document.getElementById("scannerOverlay").hidden) starteScannerKamera(onErgebnis, neu); });
+      });
+      reihe.appendChild(b);
+    });
+    platz.hidden = false;
+  }).catch(() => { platz.hidden = true; });
 }
 
 function schliesseBarcodeScanner() {
@@ -325,14 +402,17 @@ function schliesseBarcodeScanner() {
   // das Overlay dann offen und „Schließen“ schien nicht zu funktionieren.
   overlay.hidden = true;
   barcodeScanErgebnisCallback = null;
+  const platz = document.getElementById("scannerKameras");
+  if (platz) platz.hidden = true;
+  scannerLauf++;
   if (html5QrcodeScanner) {
     const scanner = html5QrcodeScanner;
     html5QrcodeScanner = null;
-    try {
-      Promise.resolve(scanner.stop()).then(() => scanner.clear()).catch(() => { try { scanner.clear(); } catch (e) { /* egal */ } });
-    } catch (e) {
-      try { scanner.clear(); } catch (e2) { /* egal */ }
-    }
+    // v7.3: Stopp merken – das nächste Öffnen wartet darauf
+    scannerStopp = Promise.resolve()
+      .then(() => scanner.stop())
+      .then(() => { try { scanner.clear(); } catch (e) { /* egal */ } })
+      .catch(() => { try { scanner.clear(); } catch (e) { /* egal */ } });
   }
 }
 
@@ -359,6 +439,13 @@ function autosave() {
 }
 
 /* ---------- Hilfsfunktionen ---------- */
+
+// v7.3: Position IM BESTEHENDEN Array entfernen. Vorher wurde per filter() ein neues
+// Array zugewiesen – die Materialsuche (msZustand) schrieb danach weiter in das alte
+// Array, neu hinzugefügtes/gescanntes Material tauchte dann nicht mehr in der Liste auf.
+function entferneMaterialZeile(liste, id) {
+  for (let i = liste.length - 1; i >= 0; i--) if (liste[i].id === id) liste.splice(i, 1);
+}
 
 function neueId() {
   return "am_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
@@ -1034,7 +1121,7 @@ function renderMaterialTabelle() {
     tdDel.className = "col-del";
     tdDel.innerHTML = `<button class="btn-danger-text" type="button" aria-label="Entfernen">${ic("trash")}</button>`;
     tdDel.querySelector("button").addEventListener("click", () => {
-      currentAufmass.material = currentAufmass.material.filter((x) => x.id !== m.id);
+      entferneMaterialZeile(currentAufmass.material, m.id);
       renderMaterialTabelle();
       autosave();
     });
@@ -1139,7 +1226,7 @@ function bauePacklisteZeile(m, istGepackt) {
   tdDel.className = "col-del";
   tdDel.innerHTML = `<button class="btn-danger-text" type="button" aria-label="Entfernen">${ic("trash")}</button>`;
   tdDel.querySelector("button").addEventListener("click", () => {
-    currentPackliste.material = currentPackliste.material.filter((x) => x.id !== m.id);
+    entferneMaterialZeile(currentPackliste.material, m.id);
     renderPacklisteMaterial();
     autosave();
   });

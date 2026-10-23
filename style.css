@@ -901,3 +901,12 @@ td.col-del .btn-danger-text { width: 32px; height: 32px; }
   max-width: 90%; text-align: center; box-shadow: 0 8px 24px rgba(0, 0, 0, .2);
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---- 17. Barcode-Scanner (v7.3): Kamerabild bleibt im Fenster, Kamerawahl ---- */
+#scannerReader { position: relative; }
+#scannerReader > div { position: relative; width: 100%; }
+#scannerReader video { position: static !important; display: block; }
+.scanner-kameras { padding: 10px 16px 0; }
+.scanner-kameras-titel { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 4px; }
+.scanner-kameras .chip { padding: 7px 12px; font-size: 13px; }
+.chip.chip-aktiv { background: var(--ink); color: #fff; }
