@@ -36,6 +36,7 @@
   <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636-2.87l-8.106-13.536a1.914 1.914 0 0 0-3.274 0z"/><path d="M12 16h.01"/></symbol>
   <symbol id="i-pencil-plus" viewBox="0 0 24 24"><path d="M4 20h4l10.5-10.5a2.828 2.828 0 1 0-4-4l-10.5 10.5v4"/><path d="M13.5 6.5l4 4"/><path d="M16 19h6"/><path d="M19 16v6"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="M21 21l-6-6"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24"><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17h-2v-11a1 1 0 0 1 1-1h9v12m-4 0h6m4 0h2v-6h-8m0-5h5l3 5"/></symbol>
   <symbol id="i-package" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9l-8 4.5l-8-4.5v-9l8-4.5"/><path d="M12 12l8-4.5"/><path d="M12 12v9"/><path d="M12 12l-8-4.5"/></symbol>
   <symbol id="i-clipboard" viewBox="0 0 24 24"><path d="M9 5h-2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-12a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12h.01"/><path d="M13 12h2"/><path d="M9 16h.01"/><path d="M13 16h2"/></symbol>
   <symbol id="i-ruler" viewBox="0 0 24 24"><path d="M5 4h14a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-7a1 1 0 0 0-1 1v7a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1v-14a1 1 0 0 1 1-1"/><path d="M4 8h2"/><path d="M4 12h3"/><path d="M4 16h2"/><path d="M8 4v2"/><path d="M12 4v3"/><path d="M16 4v2"/></symbol>
@@ -152,6 +153,10 @@ function ic(name) { return `<svg class="ic" aria-hidden="true"><use href="#i-${n
 
     <details class="section-card" open>
       <summary><span class="ht ht-ink"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></span><span>Materialliste (<span id="anzahlPositionen">0</span>)</span></summary>
+      <label class="bulli-schalter">
+        <input type="checkbox" id="f_ausBulli">
+        <span class="bulli-schalter-text"><strong><svg class="ic" aria-hidden="true"><use href="#i-truck"/></svg>Material aus dem Bulli</strong><small>Alle Positionen kommen auf „Bulli auffüllen“. Einzelne Zeilen über das Bulli-Symbol ändern.</small></span>
+      </label>
       <div class="table-scroll">
         <table id="materialTabelle">
           <thead>

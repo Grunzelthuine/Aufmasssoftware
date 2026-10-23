@@ -915,3 +915,27 @@ td.col-del .btn-danger-text { width: 32px; height: 32px; }
 .scanner-licht.aktiv { background: #ffd84d; color: #3a2f00; }
 .chip.chip-aktiv { background: var(--ink); color: #fff; }
 .scanner-einstellung .sk-laden { margin-top: 6px; }
+
+/* ---------- Bulli (v7.6) ---------- */
+.bulli-schalter {
+  display: flex; flex-direction: row; align-items: center; gap: 12px; margin: 0 0 12px;
+  padding: 10px 12px; border-radius: 12px; background: var(--orange-tint); cursor: pointer;
+}
+.bulli-schalter input[type=checkbox] { flex: 0 0 auto; margin-top: 2px; width: 22px; height: 22px; }
+.bulli-schalter-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.bulli-schalter-text strong { display: flex; align-items: center; gap: 6px; color: var(--orange-ink); font-size: 15px; }
+.bulli-schalter-text strong svg.ic { width: 18px; height: 18px; }
+.bulli-schalter-text small { color: var(--muted); font-size: 12.5px; font-weight: 400; }
+.bulli-btn {
+  display: inline-flex; align-items: center; justify-content: center; vertical-align: middle;
+  width: 34px; height: 34px; margin-right: 2px; border: 1.5px solid var(--line); border-radius: 10px;
+  background: #fff; color: #b5b8bf; cursor: pointer; padding: 0;
+}
+.bulli-btn svg.ic { width: 18px; height: 18px; }
+.bulli-btn.aktiv { background: var(--orange); border-color: var(--orange); color: #fff; }
+.bulli-karte { gap: 12px; border: 1.5px solid var(--orange-tint); }
+.bulli-karte > .ht { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; }
+.bulli-hinweis { display: flex; gap: 8px; align-items: flex-start; }
+.bulli-hinweis svg.ic { flex: 0 0 18px; width: 18px; height: 18px; color: var(--orange); margin-top: 1px; }
+td.bulli-menge { font-weight: 700; white-space: nowrap; }
+#btnBulliLeeren { margin-top: 10px; }

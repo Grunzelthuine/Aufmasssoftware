@@ -848,7 +848,7 @@ function zeigeStart() {
   const gross = "kachel-gross";
   view.appendChild(baueKachel("clipboard orange", "Aufmaß", anz(aufmassListe.length, "Aufmaß", "Aufmaße") + " · Material je Baustelle", () => { aktuellerBereich = "aufmass"; zeigeUebersicht(); }, gross));
   view.appendChild(baueKachel("home orange", "Bauaufmaß", anz(bauaufmasse.length, "Bauaufmaß", "Bauaufmaße") + " · Etagen, Räume, Verteilung", () => { aktuellerBereich = "bau"; zeigeUebersicht(); }, gross));
-  view.appendChild(baueKachel("package blue", "Packliste", anz(packlisten.length, "Packliste", "Packlisten") + " · Abhaken beim Einladen", () => { aktuellerBereich = "packliste"; zeigeUebersicht(); }, gross));
+  view.appendChild(baueKachel("package blue", "Packliste", anz(packlisten.length, "Packliste", "Packlisten") + (bulliAnzahlOffen() ? ` · Bulli: ${bulliAnzahlOffen()} nachzuladen` : " · Abhaken beim Einladen"), () => { aktuellerBereich = "packliste"; zeigeUebersicht(); }, gross));
   const ma = typeof mitarbeiterName === "function" ? mitarbeiterName() : "";
   const einst = document.createElement("button");
   einst.type = "button";
@@ -929,6 +929,12 @@ function zeigeUebersicht() {
     }
   } else if (aktuellerBereich === "packliste") {
     leer.textContent = packlisten.length ? "" : "Noch keine Packliste angelegt.";
+    // feste Packliste „Bulli auffüllen“ immer ganz oben
+    const nBulli = bulliAnzahlOffen();
+    karte("Bulli auffüllen", nBulli ? `${nBulli} Position${nBulli === 1 ? "" : "en"} nachzuladen · aus Aufmaßen` : "Nichts nachzuladen · füllt sich aus Aufmaßen", zeigeBulliPackliste);
+    const bulliKarte = ul.lastElementChild;
+    bulliKarte.classList.add("bulli-karte");
+    bulliKarte.insertAdjacentHTML("afterbegin", `<span class="ht ht-orange">${ic("truck")}</span>`);
     for (const p of sortiere(packlisten)) {
       const offen = p.material.filter((m) => !m.erledigt).length;
       karte(p.bezeichnung.trim() || "(ohne Bezeichnung)", `${formatDatumDE(p.datum)} · ${offen} von ${p.material.length} noch zu packen`, () => oeffnePackliste(p));
@@ -1016,7 +1022,17 @@ function bindeFormularEvents() {
     bindeKundenstamm({ name: "f_kundeName", ansprechpartner: "f_ansprechpartner", strasse: "f_strasse", plzOrt: "f_plzOrt", telefon: "f_telefon" }, a.kunde);
   }
   klonMaterialTabs("materialHinzufuegenAufmass");
+  // Bulli-Schalter im Kopf: setzt alle Zeilen; neue Zeilen übernehmen die Einstellung
+  const bulliSchalter = document.getElementById("f_ausBulli");
+  bulliSchalter.checked = !!a.ausBulli;
+  bulliSchalter.addEventListener("change", () => {
+    a.ausBulli = bulliSchalter.checked;
+    a.material.forEach((m) => setzeBulli(m, a.ausBulli));
+    renderMaterialTabelle();
+    autosave();
+  });
   bindeMaterialAuswahl(a.material, () => {
+    a.material.forEach((m) => { if (m.bulli === undefined) setzeBulli(m, !!a.ausBulli); });
     renderMaterialTabelle();
     autosave();
   }, { diktat: true });
@@ -1182,8 +1198,13 @@ function renderMaterialTabelle() {
 
     const tdDel = document.createElement("td");
     tdDel.className = "col-del";
-    tdDel.innerHTML = `<button class="btn-danger-text" type="button" aria-label="Entfernen">${ic("trash")}</button>`;
-    tdDel.querySelector("button").addEventListener("click", () => {
+    tdDel.innerHTML = `<button class="bulli-btn${m.bulli ? " aktiv" : ""}" type="button" aria-pressed="${m.bulli ? "true" : "false"}" aria-label="${m.bulli ? "Nicht aus dem Bulli" : "Aus dem Bulli genommen"}">${ic("truck")}</button><button class="btn-danger-text" type="button" aria-label="Entfernen">${ic("trash")}</button>`;
+    tdDel.querySelector(".bulli-btn").addEventListener("click", () => {
+      setzeBulli(m, !m.bulli);
+      renderMaterialTabelle();
+      autosave();
+    });
+    tdDel.querySelector(".btn-danger-text").addEventListener("click", () => {
       entferneMaterialZeile(currentAufmass.material, m.id);
       renderMaterialTabelle();
       autosave();
@@ -1192,6 +1213,141 @@ function renderMaterialTabelle() {
 
     tbody.appendChild(tr);
   });
+}
+
+/* ---------- Bulli auffüllen ----------
+   Positionen eines Aufmaßes mit `bulli: true` wurden aus dem Bulli genommen.
+   Die Packliste „Bulli auffüllen“ wird jedes Mal neu aus allen Aufmaßen
+   berechnet (gleiche Artikel zusammengezählt). Was schon wieder eingeladen
+   ist, steht an der Materialzeile selbst:
+   - bulliGepackt: eingeladene Menge (Menge später erhöht -> Rest wieder offen)
+   - bulliAusgeblendet: Teil davon, der aus „Bereits gepackt“ entfernt wurde
+   Die Markierung erscheint nicht im PDF. Daten sind je Konto getrennt
+   (Cloud-Sync pro Mitarbeiter), also sieht jeder nur seinen Bulli. */
+
+function setzeBulli(m, an) {
+  if (an) m.bulli = true;
+  else { m.bulli = false; delete m.bulliGepackt; delete m.bulliAusgeblendet; }
+}
+
+function bulliSchluessel(m) {
+  const e = (m.einheit || "").trim().toLowerCase();
+  return m.artikelnummer ? "nr:" + m.artikelnummer + "|" + e : "b:" + (m.bezeichnung || "").trim().toLowerCase() + "|" + e;
+}
+
+function bulliPositionen() {
+  const map = new Map();
+  for (const a of aufmassListe) {
+    for (const m of a.material || []) {
+      if (!m.bulli) continue;
+      const menge = Number(m.menge) || 0;
+      const gepacktGesamt = Math.min(menge, Number(m.bulliGepackt) || 0);
+      const offen = rundeMenge(menge - gepacktGesamt);
+      const gepackt = rundeMenge(Math.max(0, gepacktGesamt - (Number(m.bulliAusgeblendet) || 0)));
+      if (offen <= 0 && gepackt <= 0) continue;
+      const key = bulliSchluessel(m);
+      let p = map.get(key);
+      if (!p) { p = { key, bezeichnung: m.bezeichnung, artikelnummer: m.artikelnummer || "", einheit: m.einheit, offen: 0, gepackt: 0, zeilen: [] }; map.set(key, p); }
+      p.offen = rundeMenge(p.offen + offen);
+      p.gepackt = rundeMenge(p.gepackt + gepackt);
+      p.zeilen.push({ a, m, offen, gepackt });
+    }
+  }
+  return [...map.values()].sort((x, y) => x.bezeichnung.localeCompare(y.bezeichnung, "de"));
+}
+
+function bulliAnzahlOffen() {
+  return bulliPositionen().filter((p) => p.offen > 0).length;
+}
+
+function bulliHerkunftText(zeilen, feld) {
+  return zeilen.filter((z) => z[feld] > 0).map((z) => {
+    const name = (z.a.nummer ? z.a.nummer + " " : "") + (z.a.kunde.name.trim() || "(ohne Kunde)");
+    return `${name} (${z[feld].toLocaleString("de-DE")})`;
+  }).join(", ");
+}
+
+function zeigeBulliPackliste() {
+  schliesseOffeneEintraege();
+  setzeAnsicht("detail");
+  aktuellerBereich = "packliste";
+  headerTitle.textContent = "Bulli auffüllen";
+  btnBack.hidden = false;
+  btnNew.hidden = true;
+  app.innerHTML = "";
+  const view = document.createElement("section");
+  view.className = "view";
+  const tabelle = (id) => `<div class="table-scroll"><table><thead><tr><th></th><th>Bezeichnung</th><th>Menge</th><th>Einh.</th></tr></thead><tbody id="${id}"></tbody></table></div>`;
+  view.innerHTML = `
+    <p class="hint bulli-hinweis">${ic("truck")}<span>Material, das du in Aufmaßen als „aus dem Bulli“ markiert hast. Abhaken, wenn es wieder eingeladen ist.</span></p>
+    <details class="section-card" open>
+      <summary><span class="ht ht-ink">${ic("list")}</span><span>Noch einzuladen (<span id="bulliAnzahlOffen">0</span>)</span></summary>
+      ${tabelle("bulliOffenTbody")}
+      <p id="bulliOffenLeer" class="hint" hidden>Der Bulli ist voll – nichts nachzuladen.</p>
+    </details>
+    <details class="section-card" id="bulliGepacktDetails">
+      <summary><span class="ht ht-green">${ic("check")}</span><span>Bereits eingeladen (<span id="bulliAnzahlGepackt">0</span>)</span></summary>
+      ${tabelle("bulliGepacktTbody")}
+      <button type="button" class="btn btn-secondary" id="btnBulliLeeren">${ic("trash")}Eingeladene ausblenden</button>
+    </details>`;
+  app.appendChild(view);
+  view.querySelector("#btnBulliLeeren").addEventListener("click", () => {
+    for (const a of aufmassListe) for (const m of a.material || []) {
+      if (m.bulli && m.bulliGepackt) m.bulliAusgeblendet = Math.min(Number(m.menge) || 0, m.bulliGepackt);
+    }
+    speichereListe();
+    renderBulliPackliste();
+  });
+  renderBulliPackliste();
+  window.scrollTo(0, 0);
+}
+
+function renderBulliPackliste() {
+  const offenTbody = document.getElementById("bulliOffenTbody");
+  const gepacktTbody = document.getElementById("bulliGepacktTbody");
+  if (!offenTbody || !gepacktTbody) return;
+  const positionen = bulliPositionen();
+  const offen = positionen.filter((p) => p.offen > 0);
+  const gepackt = positionen.filter((p) => p.gepackt > 0);
+  offenTbody.innerHTML = "";
+  gepacktTbody.innerHTML = "";
+  document.getElementById("bulliAnzahlOffen").textContent = offen.length;
+  document.getElementById("bulliAnzahlGepackt").textContent = gepackt.length;
+  document.getElementById("bulliOffenLeer").hidden = offen.length !== 0;
+  document.getElementById("bulliGepacktDetails").hidden = gepackt.length === 0;
+
+  const zeile = (p, istGepackt) => {
+    const tr = document.createElement("tr");
+    if (istGepackt) tr.className = "zeile-gepackt";
+    const tdCheck = document.createElement("td");
+    tdCheck.className = "col-check";
+    tdCheck.innerHTML = `<button type="button" class="check-btn${istGepackt ? " checked" : ""}" aria-label="${istGepackt ? "Wieder als offen markieren" : "Als eingeladen markieren"}">${ic("check")}</button>`;
+    tdCheck.querySelector("button").addEventListener("click", () => {
+      for (const z of p.zeilen) {
+        if (istGepackt) { if (z.gepackt > 0) z.m.bulliGepackt = Number(z.m.bulliAusgeblendet) || 0; }
+        else if (z.offen > 0) z.m.bulliGepackt = Number(z.m.menge) || 0;
+        if (!z.m.bulliGepackt) delete z.m.bulliGepackt;
+      }
+      speichereListe();
+      renderBulliPackliste();
+    });
+    tr.appendChild(tdCheck);
+    const tdBez = document.createElement("td");
+    const nr = p.artikelnummer ? `<div class="row-sub">Art.-Nr. ${escapeHtml(p.artikelnummer)}</div>` : "";
+    const herkunft = bulliHerkunftText(p.zeilen, istGepackt ? "gepackt" : "offen");
+    tdBez.innerHTML = `<span class="bez-text">${escapeHtml(p.bezeichnung)}</span>${nr}${herkunft ? `<div class="row-sub">aus: ${escapeHtml(herkunft)}</div>` : ""}`;
+    tr.appendChild(tdBez);
+    const tdMenge = document.createElement("td");
+    tdMenge.className = "col-menge bulli-menge";
+    tdMenge.textContent = (istGepackt ? p.gepackt : p.offen).toLocaleString("de-DE");
+    tr.appendChild(tdMenge);
+    const tdE = document.createElement("td");
+    tdE.textContent = p.einheit;
+    tr.appendChild(tdE);
+    return tr;
+  };
+  offen.forEach((p) => offenTbody.appendChild(zeile(p, false)));
+  gepackt.forEach((p) => gepacktTbody.appendChild(zeile(p, true)));
 }
 
 /* ---------- Packliste ---------- */
