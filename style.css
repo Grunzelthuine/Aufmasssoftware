@@ -902,11 +902,16 @@ td.col-del .btn-danger-text { width: 32px; height: 32px; }
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* ---- 17. Barcode-Scanner (v7.3): Kamerabild bleibt im Fenster, Kamerawahl ---- */
+/* ---- 17. Barcode-Scanner (v7.3/v7.4): Kamerabild bleibt im Fenster, Taschenlampe ---- */
 #scannerReader { position: relative; }
 #scannerReader > div { position: relative; width: 100%; }
 #scannerReader video { position: static !important; display: block; }
-.scanner-kameras { padding: 10px 16px 0; }
-.scanner-kameras-titel { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 4px; }
-.scanner-kameras .chip { padding: 7px 12px; font-size: 13px; }
+.scanner-licht {
+  display: inline-flex; align-items: center; gap: 8px; margin: 12px auto 0; align-self: center;
+  border: none; border-radius: 22px; padding: 10px 18px; font: inherit; font-size: 15px; font-weight: 700;
+  background: var(--field); color: var(--text); cursor: pointer;
+}
+.scanner-licht svg.ic { width: 19px; height: 19px; }
+.scanner-licht.aktiv { background: #ffd84d; color: #3a2f00; }
 .chip.chip-aktiv { background: var(--ink); color: #fff; }
+.scanner-einstellung .sk-laden { margin-top: 6px; }

@@ -338,7 +338,7 @@ function starteScannerKamera(onErgebnis, kamera) {
       const video = ziel.querySelector("video");
       if (video) { video.setAttribute("playsinline", ""); video.setAttribute("muted", ""); video.muted = true; }
       hinweis.textContent = "Barcode in den Rahmen halten – ruhig, gut ausgeleuchtet und nah heranhalten.";
-      zeigeScannerKameras(onErgebnis, kamera);
+      scannerLichtVorbereiten(video);
     })
     .catch((err) => {
       if (lauf !== scannerLauf) return;
@@ -355,48 +355,104 @@ function starteScannerKamera(onErgebnis, kamera) {
     });
 }
 
-// v7.3: Auswahl der Rückkamera (iPhone mit mehreren Linsen). Die Wahl wird gemerkt
-// und beim nächsten Öffnen sofort benutzt.
-function zeigeScannerKameras(onErgebnis, aktiv) {
-  const platz = document.getElementById("scannerKameras");
-  if (!platz || !navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
-  // v7.4: NICHT Html5Qrcode.getCameras() – das öffnet kurz eine zweite Kamera, und auf dem
-  // iPhone beendet das sofort das laufende Kamerabild (Bild bleibt schwarz).
-  // enumerateDevices() liest nur die Liste (Namen sind nach erteilter Erlaubnis vorhanden).
-  navigator.mediaDevices.enumerateDevices().then((geraete) => {
-    const kameras = (geraete || []).filter((d) => d.kind === "videoinput").map((d) => ({ id: d.deviceId, label: d.label }));
-    const hinten = (kameras || []).filter((k) => !/front|vorder|facetime|user/i.test(k.label || ""));
-    if (hinten.length < 2 || document.getElementById("scannerOverlay").hidden) { platz.hidden = true; return; }
-    const video = document.querySelector("#scannerReader video");
-    let aktivId = aktiv && aktiv.id;
-    if (!aktivId && video && video.srcObject && video.srcObject.getVideoTracks) {
-      const t = video.srcObject.getVideoTracks()[0];
-      const s = t && t.getSettings ? t.getSettings() : null;
-      if (s && s.deviceId) aktivId = s.deviceId;
-    }
-    platz.innerHTML = `<div class="scanner-kameras-titel">Kamera wählen – wird gemerkt</div><div class="chip-row"></div>`;
-    const reihe = platz.querySelector(".chip-row");
-    hinten.forEach((k, i) => {
+/* ---------- v7.4: Taschenlampe im Scanner ----------
+   Knopf erscheint nur, wenn die Kamera eine Lampe hat (track.getCapabilities().torch).
+   Nach dem Scan bzw. beim Schließen geht die Lampe automatisch wieder aus. */
+let scannerLichtTrack = null;
+
+function scannerLichtVorbereiten(video) {
+  const btn = document.getElementById("scannerLicht");
+  if (!btn) return;
+  scannerLichtTrack = null;
+  btn.hidden = true;
+  btn.classList.remove("aktiv");
+  const track = video && video.srcObject && video.srcObject.getVideoTracks ? video.srcObject.getVideoTracks()[0] : null;
+  let kann = false;
+  try { kann = !!(track && track.getCapabilities && track.getCapabilities().torch); } catch (e) { kann = false; }
+  if (!kann) return;
+  scannerLichtTrack = track;
+  btn.hidden = false;
+  btn.querySelector("span").textContent = "Licht an";
+}
+
+function scannerLichtSetzen(an) {
+  const btn = document.getElementById("scannerLicht");
+  const track = scannerLichtTrack;
+  if (!track || track.readyState !== "live") return Promise.resolve();
+  return track.applyConstraints({ advanced: [{ torch: !!an }] }).then(() => {
+    if (btn) { btn.classList.toggle("aktiv", !!an); btn.querySelector("span").textContent = an ? "Licht aus" : "Licht an"; }
+  }).catch((e) => { console.warn("Taschenlampe nicht schaltbar", e); });
+}
+
+function scannerLichtUmschalten() {
+  const btn = document.getElementById("scannerLicht");
+  scannerLichtSetzen(!(btn && btn.classList.contains("aktiv")));
+}
+
+/* ---------- v7.4: Scanner-Kamera in den Einstellungen wählen ----------
+   Die Wahl wird gemerkt (am2_scanner_kamera) und beim Scannen sofort benutzt. */
+function renderScannerEinstellungen(host) {
+  if (!host) return;
+  host.innerHTML = `
+    <details class="section-card scanner-einstellung">
+      <summary><span class="ht ht-gray">${ic("camera")}</span><span>Barcode-Scanner</span></summary>
+      <p class="hint">Kamera für den Scanner. Bei iPhones mit mehreren Linsen die wählen, die nah am schärfsten ist (bei Pro-Modellen meist die Ultraweitwinkelkamera).</p>
+      <div class="chip-row sk-liste"></div>
+      <button type="button" class="btn btn-secondary sk-laden">${ic("camera")}Kameras anzeigen</button>
+      <p class="hint sk-info"></p>
+    </details>`;
+  const liste = host.querySelector(".sk-liste");
+  const laden = host.querySelector(".sk-laden");
+  const info = host.querySelector(".sk-info");
+  const zeichne = (kameras) => {
+    const gew = scannerGespeicherteKamera();
+    liste.innerHTML = "";
+    const knopf = (text, wert) => {
       const b = document.createElement("button");
       b.type = "button";
-      b.className = "chip" + (k.id === aktivId ? " chip-aktiv" : "");
-      b.textContent = (k.label || `Kamera ${i + 1}`).replace(/^(Rückseitige|Back)\s*/i, "") || `Kamera ${i + 1}`;
+      const aktiv = wert ? !!(gew && gew.id === wert.id) : !gew;
+      b.className = "chip" + (aktiv ? " chip-aktiv" : "");
+      b.textContent = text;
       b.addEventListener("click", () => {
-        if (k.id === aktivId) return;
-        const neu = { id: k.id, label: k.label || "" };
-        try { localStorage.setItem(SCANNER_KAMERA_KEY, JSON.stringify(neu)); } catch (e) { /* egal */ }
-        platz.hidden = true;
-        document.getElementById("scannerHinweis").textContent = "Kamera wird gewechselt…";
-        const alt = html5QrcodeScanner;
-        html5QrcodeScanner = null;
-        const lauf = ++scannerLauf;
-        scannerStopp = alt ? Promise.resolve().then(() => alt.stop()).then(() => alt.clear()).catch(() => { try { alt.clear(); } catch (e) { /* egal */ } }) : Promise.resolve();
-        scannerStopp.then(() => { if (lauf === scannerLauf && !document.getElementById("scannerOverlay").hidden) starteScannerKamera(onErgebnis, neu); });
+        try {
+          if (wert) localStorage.setItem(SCANNER_KAMERA_KEY, JSON.stringify(wert));
+          else localStorage.removeItem(SCANNER_KAMERA_KEY);
+        } catch (e) { /* egal */ }
+        zeichne(kameras);
       });
-      reihe.appendChild(b);
-    });
-    platz.hidden = false;
-  }).catch(() => { platz.hidden = true; });
+      liste.appendChild(b);
+    };
+    knopf("Automatisch", null);
+    kameras.forEach((k, i) => knopf((k.label || `Kamera ${i + 1}`).replace(/^(Rückseitige|Back)\s*/i, "") || `Kamera ${i + 1}`, { id: k.id, label: k.label || "" }));
+    if (gew && !kameras.some((k) => k.id === gew.id)) info.textContent = `Gewählt: ${gew.label || "gespeicherte Kamera"}`;
+    else info.textContent = "";
+  };
+  const rueckkameras = (geraete) => (geraete || []).filter((d) => d.kind === "videoinput" && !/front|vorder|facetime|user/i.test(d.label || "")).map((d) => ({ id: d.deviceId, label: d.label }));
+  const holeListe = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) { info.textContent = "Dieses Gerät kann keine Kameraliste liefern."; return; }
+    let geraete = await navigator.mediaDevices.enumerateDevices();
+    // Namen gibt es erst nach erteilter Kamera-Erlaubnis: dann kurz eine Kamera öffnen und gleich wieder schließen
+    if (!geraete.some((d) => d.kind === "videoinput" && d.label)) {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+      stream.getTracks().forEach((t) => t.stop());
+      geraete = await navigator.mediaDevices.enumerateDevices();
+    }
+    const k = rueckkameras(geraete);
+    laden.hidden = true;
+    zeichne(k);
+    if (k.length < 2) info.textContent = "Nur eine Rückkamera gefunden – „Automatisch“ passt.";
+  };
+  laden.addEventListener("click", () => {
+    info.textContent = "Kameras werden gesucht…";
+    holeListe().catch(() => { info.textContent = "Kamera nicht erlaubt oder nicht verfügbar."; });
+  });
+  // Ist die Erlaubnis schon da, Liste gleich zeigen
+  if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+    navigator.mediaDevices.enumerateDevices().then((g) => {
+      if (g.some((d) => d.kind === "videoinput" && d.label)) { laden.hidden = true; zeichne(rueckkameras(g)); }
+      else zeichne([]);
+    }).catch(() => zeichne([]));
+  } else zeichne([]);
 }
 
 function schliesseBarcodeScanner() {
@@ -406,14 +462,17 @@ function schliesseBarcodeScanner() {
   // das Overlay dann offen und „Schließen“ schien nicht zu funktionieren.
   overlay.hidden = true;
   barcodeScanErgebnisCallback = null;
-  const platz = document.getElementById("scannerKameras");
-  if (platz) platz.hidden = true;
   scannerLauf++;
+  // v7.4: Taschenlampe aus, bevor die Kamera gestoppt wird
+  const licht = scannerLichtSetzen(false);
+  scannerLichtTrack = null;
+  const lichtBtn = document.getElementById("scannerLicht");
+  if (lichtBtn) { lichtBtn.hidden = true; lichtBtn.classList.remove("aktiv"); }
   if (html5QrcodeScanner) {
     const scanner = html5QrcodeScanner;
     html5QrcodeScanner = null;
     // v7.3: Stopp merken – das nächste Öffnen wartet darauf
-    scannerStopp = Promise.resolve()
+    scannerStopp = licht
       .then(() => scanner.stop())
       .then(() => { try { scanner.clear(); } catch (e) { /* egal */ } })
       .catch(() => { try { scanner.clear(); } catch (e) { /* egal */ } });
@@ -1469,6 +1528,8 @@ initDatenbank(); // einmalige Übernahme von Standardmaterial, Produktliste und 
 
 const btnScannerSchliessen = document.getElementById("btnScannerSchliessen");
 if (btnScannerSchliessen) btnScannerSchliessen.addEventListener("click", schliesseBarcodeScanner);
+const btnScannerLicht = document.getElementById("scannerLicht");
+if (btnScannerLicht) btnScannerLicht.addEventListener("click", scannerLichtUmschalten);
 const btnScannerAbbrechen = document.getElementById("btnScannerAbbrechen");
 if (btnScannerAbbrechen) btnScannerAbbrechen.addEventListener("click", schliesseBarcodeScanner);
 

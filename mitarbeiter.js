@@ -144,7 +144,8 @@ function oeffneEinstellungen() {
     </div>
     <div id="e_kacheln" class="view"></div>
     <div id="e_kunden"></div>
-    <div id="e_katalog"></div>`;
+    <div id="e_katalog"></div>
+    <div id="e_scanner"></div>`;
   app.appendChild(view);
   window.scrollTo(0, 0);
   const name = document.getElementById("e_name");
@@ -172,4 +173,5 @@ function oeffneEinstellungen() {
   }
   if (typeof renderKundenstammEinstellungen === "function") renderKundenstammEinstellungen(document.getElementById("e_kunden"));
   if (typeof renderKatalogEinstellungen === "function") renderKatalogEinstellungen(document.getElementById("e_katalog"));
+  if (typeof renderScannerEinstellungen === "function") renderScannerEinstellungen(document.getElementById("e_scanner"));
 }
