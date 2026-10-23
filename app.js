@@ -359,8 +359,12 @@ function starteScannerKamera(onErgebnis, kamera) {
 // und beim nächsten Öffnen sofort benutzt.
 function zeigeScannerKameras(onErgebnis, aktiv) {
   const platz = document.getElementById("scannerKameras");
-  if (!platz || typeof Html5Qrcode.getCameras !== "function") return;
-  Html5Qrcode.getCameras().then((kameras) => {
+  if (!platz || !navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  // v7.4: NICHT Html5Qrcode.getCameras() – das öffnet kurz eine zweite Kamera, und auf dem
+  // iPhone beendet das sofort das laufende Kamerabild (Bild bleibt schwarz).
+  // enumerateDevices() liest nur die Liste (Namen sind nach erteilter Erlaubnis vorhanden).
+  navigator.mediaDevices.enumerateDevices().then((geraete) => {
+    const kameras = (geraete || []).filter((d) => d.kind === "videoinput").map((d) => ({ id: d.deviceId, label: d.label }));
     const hinten = (kameras || []).filter((k) => !/front|vorder|facetime|user/i.test(k.label || ""));
     if (hinten.length < 2 || document.getElementById("scannerOverlay").hidden) { platz.hidden = true; return; }
     const video = document.querySelector("#scannerReader video");
