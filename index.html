@@ -110,6 +110,34 @@ function ic(name) { return `<svg class="ic" aria-hidden="true"><use href="#i-${n
 <template id="tpl-formular">
   <section class="view">
     <details class="section-card" open>
+      <summary><span class="ht ht-blue"><svg class="ic" aria-hidden="true"><use href="#i-package"/></svg></span><span>Material hinzufügen</span></summary>
+      <div id="a_ordner" class="aufmass-ordner"></div>
+      <div id="materialHinzufuegenAufmass"></div>
+    </details>
+
+    <details class="section-card">
+      <summary><span class="ht ht-ink"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></span><span>Materialliste (<span id="anzahlPositionen">0</span>)</span></summary>
+      <label class="bulli-schalter">
+        <input type="checkbox" id="f_ausBulli">
+        <span class="bulli-schalter-text"><strong><svg class="ic" aria-hidden="true"><use href="#i-truck"/></svg>Material aus dem Bulli</strong><small>Alle Positionen kommen auf „Bulli auffüllen“. Einzelne Zeilen über das Bulli-Symbol ändern.</small></span>
+      </label>
+      <div class="table-scroll">
+        <table id="materialTabelle">
+          <thead>
+            <tr>
+              <th>Bezeichnung</th>
+              <th>Menge</th>
+              <th>Einh.</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="materialTbody"></tbody>
+        </table>
+      </div>
+      <p id="materialLeerHinweis" class="hint" hidden>Noch kein Material erfasst.</p>
+    </details>
+
+    <details class="section-card">
       <summary><span class="ht ht-violet"><svg class="ic" aria-hidden="true"><use href="#i-users"/></svg></span><span>Kunde &amp; Baustelle</span></summary>
       <div class="field-grid">
         <label>Kunde / Firma
@@ -133,7 +161,7 @@ function ic(name) { return `<svg class="ic" aria-hidden="true"><use href="#i-${n
       </div>
     </details>
 
-    <details class="section-card" open>
+    <details class="section-card">
       <summary><span class="ht ht-orange"><svg class="ic" aria-hidden="true"><use href="#i-pencil-plus"/></svg></span><span>Datum &amp; Arbeitsbeschreibung</span></summary>
       <div class="field-grid">
         <label>Datum
@@ -143,34 +171,6 @@ function ic(name) { return `<svg class="ic" aria-hidden="true"><use href="#i-${n
       <label class="full">Arbeitsbeschreibung
         <textarea id="f_arbeitsbeschreibung" rows="3" placeholder="Was wurde / wird ausgeführt?"></textarea>
       </label>
-    </details>
-
-    <details class="section-card" open>
-      <summary><span class="ht ht-blue"><svg class="ic" aria-hidden="true"><use href="#i-package"/></svg></span><span>Material hinzufügen</span></summary>
-      <div id="a_ordner" class="aufmass-ordner"></div>
-      <div id="materialHinzufuegenAufmass"></div>
-    </details>
-
-    <details class="section-card" open>
-      <summary><span class="ht ht-ink"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></span><span>Materialliste (<span id="anzahlPositionen">0</span>)</span></summary>
-      <label class="bulli-schalter">
-        <input type="checkbox" id="f_ausBulli">
-        <span class="bulli-schalter-text"><strong><svg class="ic" aria-hidden="true"><use href="#i-truck"/></svg>Material aus dem Bulli</strong><small>Alle Positionen kommen auf „Bulli auffüllen“. Einzelne Zeilen über das Bulli-Symbol ändern.</small></span>
-      </label>
-      <div class="table-scroll">
-        <table id="materialTabelle">
-          <thead>
-            <tr>
-              <th>Bezeichnung</th>
-              <th>Menge</th>
-              <th>Einh.</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="materialTbody"></tbody>
-        </table>
-      </div>
-      <p id="materialLeerHinweis" class="hint" hidden>Noch kein Material erfasst.</p>
     </details>
 
     <div class="action-bar">
