@@ -117,10 +117,6 @@ function ic(name) { return `<svg class="ic" aria-hidden="true"><use href="#i-${n
 
     <details class="section-card">
       <summary><span class="ht ht-ink"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></span><span>Materialliste (<span id="anzahlPositionen">0</span>)</span></summary>
-      <label class="bulli-schalter">
-        <input type="checkbox" id="f_ausBulli">
-        <span class="bulli-schalter-text"><strong><svg class="ic" aria-hidden="true"><use href="#i-truck"/></svg>Material aus dem Bulli</strong><small>Alle Positionen kommen auf „Bulli auffüllen“. Einzelne Zeilen über das Bulli-Symbol ändern.</small></span>
-      </label>
       <div class="table-scroll">
         <table id="materialTabelle">
           <thead>
@@ -128,7 +124,6 @@ function ic(name) { return `<svg class="ic" aria-hidden="true"><use href="#i-${n
               <th>Bezeichnung</th>
               <th>Menge</th>
               <th>Einh.</th>
-              <th></th>
             </tr>
           </thead>
           <tbody id="materialTbody"></tbody>

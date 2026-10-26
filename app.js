@@ -1022,17 +1022,7 @@ function bindeFormularEvents() {
     bindeKundenstamm({ name: "f_kundeName", ansprechpartner: "f_ansprechpartner", strasse: "f_strasse", plzOrt: "f_plzOrt", telefon: "f_telefon" }, a.kunde);
   }
   klonMaterialTabs("materialHinzufuegenAufmass");
-  // Bulli-Schalter im Kopf: setzt alle Zeilen; neue Zeilen übernehmen die Einstellung
-  const bulliSchalter = document.getElementById("f_ausBulli");
-  bulliSchalter.checked = !!a.ausBulli;
-  bulliSchalter.addEventListener("change", () => {
-    a.ausBulli = bulliSchalter.checked;
-    a.material.forEach((m) => setzeBulli(m, a.ausBulli));
-    renderMaterialTabelle();
-    autosave();
-  });
   bindeMaterialAuswahl(a.material, () => {
-    a.material.forEach((m) => { if (m.bulli === undefined) setzeBulli(m, !!a.ausBulli); });
     renderMaterialTabelle();
     autosave();
   }, { diktat: true });
@@ -1190,14 +1180,16 @@ function renderMaterialTabelle() {
     tdBez.innerHTML = `${escapeHtml(m.bezeichnung)}${sub}`;
     tr.appendChild(tdBez);
 
-    tr.appendChild(baueMengeZelle(m, autosave));
+    // v7.8: Bulli- und Löschknopf direkt unter der Menge (keine eigene Spalte mehr -> nicht breiter als das Fenster)
+    const tdMenge = baueMengeZelle(m, autosave);
+    tr.appendChild(tdMenge);
 
     const tdEinheit = document.createElement("td");
     tdEinheit.textContent = m.einheit;
     tr.appendChild(tdEinheit);
 
-    const tdDel = document.createElement("td");
-    tdDel.className = "col-del";
+    const tdDel = document.createElement("div");
+    tdDel.className = "zeile-aktionen";
     tdDel.innerHTML = `<button class="bulli-btn${m.bulli ? " aktiv" : ""}" type="button" aria-pressed="${m.bulli ? "true" : "false"}" aria-label="${m.bulli ? "Nicht aus dem Bulli" : "Aus dem Bulli genommen"}">${ic("truck")}</button><button class="btn-danger-text" type="button" aria-label="Entfernen">${ic("trash")}</button>`;
     tdDel.querySelector(".bulli-btn").addEventListener("click", () => {
       setzeBulli(m, !m.bulli);
@@ -1209,7 +1201,7 @@ function renderMaterialTabelle() {
       renderMaterialTabelle();
       autosave();
     });
-    tr.appendChild(tdDel);
+    tdMenge.appendChild(tdDel);
 
     tbody.appendChild(tr);
   });

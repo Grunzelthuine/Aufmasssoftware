@@ -274,7 +274,8 @@ input[type=checkbox], input[type=radio] { accent-color: var(--orange); width: 18
 td.col-del .btn-danger-text,
 .schaltung-kopf .btn-danger-text,
 .stripe-kopf .btn-danger-text,
-.komp-aktionen .btn-danger-text {
+.komp-aktionen .btn-danger-text,
+.zeile-aktionen .btn-danger-text {
   width: 36px; height: 36px; padding: 0; background: var(--red-tint);
 }
 .btn-link-accent {
@@ -939,3 +940,17 @@ td.col-del .btn-danger-text { width: 32px; height: 32px; }
 .bulli-hinweis svg.ic { flex: 0 0 18px; width: 18px; height: 18px; color: var(--orange); margin-top: 1px; }
 td.bulli-menge { font-weight: 700; white-space: nowrap; }
 #btnBulliLeeren { margin-top: 10px; }
+
+/* v7.8: Bulli/Löschen unter der Menge in der Aufmaß-Materialliste */
+#materialTabelle { table-layout: fixed; }
+#materialTabelle th:nth-child(1), #materialTabelle td:nth-child(1) { width: auto; overflow-wrap: anywhere; hyphens: auto; }
+#materialTabelle th:nth-child(2), #materialTabelle td:nth-child(2) { width: 140px; min-width: 0; }
+#materialTabelle .menge-control .btn-qty { width: 30px; min-width: 30px; }
+#materialTabelle .menge-control input:not([type=checkbox]) { width: 62px !important; padding: 4px 2px !important; }
+#materialTabelle .btn-qty-add { padding-left: 8px; padding-right: 8px; }
+#materialTabelle th:nth-child(3), #materialTabelle td:nth-child(3) { width: 44px; overflow-wrap: anywhere; }
+#materialTabelle .menge-add input:not([type=checkbox]) { width: 52px; }
+#materialTabelle .menge-add { flex-wrap: wrap; }
+.zeile-aktionen { display: flex; gap: 8px; margin-top: 6px; }
+.zeile-aktionen .bulli-btn { margin: 0; }
+.zeile-aktionen .btn-danger-text { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
