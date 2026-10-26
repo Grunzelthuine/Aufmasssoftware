@@ -7,8 +7,10 @@
    Treffer gruppiert: 📁 Baustelle → ⭐ Favoriten → Meine Datenbank →
    Großhandelskatalog → Freitext. Ein Tipp fügt Menge 1 hinzu; die Menge
    wird in der Leiste unten angepasst (oder ↶ rückgängig).
-   Material aus Katalog/Freitext/unbekannter EAN legt sich automatisch in
-   der Datenbank ab (im Baustellen-Ordner, sonst „Eigene Artikel“).
+   Freitext und unbekannte EAN legen sich automatisch in der Datenbank ab
+   (im Baustellen-Ordner, sonst „Eigene Artikel“). Katalogmaterial nur bei
+   aktivem Baustellen-Ordner – sonst gibt es den Artikel ja schon im Katalog
+   (v7.9; „Häufig benutzt“/Favoriten merken ihn über die Katalog-Art.-Nr.).
    Wird nach app.js geladen.
    ============================================================ */
 
@@ -319,12 +321,14 @@ function msHinzufuegen(e, menge) {
   const { material, fertig } = msZustand;
   const ordnerId = typeof aktiverOrdnerId === "function" ? aktiverOrdnerId() : "";
   let name = e.name, nr = e.nr || "", einheit = e.einheit || "Stck";
-  // Automatisch in der Datenbank ablegen (Katalog / eigenes Material / neue EAN)
-  if (e.quelle === "katalog" || e.quelle === "frei") {
+  // Automatisch in der Datenbank ablegen: Freitext / neue EAN immer, Katalog nur in einen Baustellen-Ordner
+  let nurKatalog = false;
+  if (e.quelle === "frei" || (e.quelle === "katalog" && ordnerId)) {
     const m = dbNeu({ kat: KAT_EIGENE, name, nr, ean: e.ean || "", einheit, ordner: ordnerId });
     if (m) { name = m.name; nr = m.nr || ""; einheit = m.einheit || einheit; }
-  }
-  registriereFavoritTreffer("standard", "", name, einheit);
+  } else if (e.quelle === "katalog" && nr) nurKatalog = true;
+  if (nurKatalog) registriereFavoritTreffer("liste", nr, name, einheit);
+  else registriereFavoritTreffer("standard", "", name, einheit);
 
   const istKombination = !!e.kombi;
   let zeile = istKombination ? null : material.find((x) => !String(x.id).includes("~") && !x.erledigt &&

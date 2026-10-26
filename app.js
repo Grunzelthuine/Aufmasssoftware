@@ -1670,6 +1670,7 @@ ladeBauaufmasse();
 ladeFavoriten();
 ladeSterne();
 ladeDatenbank();
+planeKatalogKopienAufraeumen(); // v7.9: alte Katalog-Kopien aus „Eigene Artikel“ einmalig entfernen
 ladeMaterialDB();
 zeigeStart();
 initDatenbank(); // einmalige Übernahme von Standardmaterial, Produktliste und eigenen Artikeln

@@ -1150,3 +1150,60 @@ function renderDoppelte(liste, info, neuZeichnen) {
     liste.appendChild(karte);
   }
 }
+
+
+/* ---------- v7.9: alte Katalog-Kopien aus „Eigene Artikel“ entfernen ----------
+   Bis v7.8 wurde jeder Katalogartikel beim Hinzufügen automatisch unter
+   „Eigene Artikel“ gespeichert. Einmalig je Gerät (sobald der Katalog geladen ist):
+   Einträge in „Eigene Artikel“ ohne Baustellen-Ordner, deren Art.-Nr. im
+   Großhandelskatalog steht, werden gelöscht. Per Barcode angelegte Artikel
+   (ohne Art.-Nr.), Freitext, Ordner-Material und Kombinationen bleiben.
+   Zähler und Sterne wandern auf den Katalog-Schlüssel („liste:<Art.-Nr.>“). */
+const KATALOG_KOPIEN_KEY = "am2_katalogkopien_bereinigt";
+
+function entferneKatalogKopien() {
+  try { if (localStorage.getItem(KATALOG_KOPIEN_KEY)) return 0; } catch (e) { return 0; }
+  if (typeof materialDBReady === "undefined" || !materialDBReady || !materialDB.length) return 0;
+  const kandidaten = dbMaterial.filter((m) => m.kat === KAT_EIGENE && !m.ordner && m.nr && !istKombi(m));
+  const nrs = new Set(kandidaten.map((m) => m.nr));
+  const imKatalog = new Set();
+  if (nrs.size) for (let i = 0; i < materialDB.length; i++) { const n = materialDB[i].n; if (nrs.has(n)) imKatalog.add(n); }
+  const weg = kandidaten.filter((m) => imKatalog.has(m.nr));
+  if (weg.length) {
+    const ids = new Set(weg.map((m) => m.id));
+    let favGeaendert = false, sternGeaendert = false;
+    for (const m of weg) {
+      const alt = "standard:" + m.name, neu = "liste:" + m.nr;
+      if (favoritenCounts[alt]) {
+        const z = favoritenCounts[neu] || { count: 0, quelle: "liste", artikelnummer: m.nr, bezeichnung: m.name, einheit: m.einheit || "Stck" };
+        z.count += favoritenCounts[alt].count || 0;
+        favoritenCounts[neu] = z;
+        delete favoritenCounts[alt];
+        favGeaendert = true;
+      }
+      if (sterne[alt]) {
+        sterne[neu] = { quelle: "liste", artikelnummer: m.nr, bezeichnung: m.name, einheit: m.einheit || "Stck" };
+        delete sterne[alt];
+        sternGeaendert = true;
+      }
+    }
+    dbMaterial = dbMaterial.filter((m) => !ids.has(m.id));
+    speichereMaterial();
+    if (favGeaendert) speichereFavoriten();
+    if (sternGeaendert) speichereSterne();
+    if (typeof aktualisiereAbgeleiteteListen === "function") aktualisiereAbgeleiteteListen();
+  }
+  try { localStorage.setItem(KATALOG_KOPIEN_KEY, new Date().toISOString() + " (" + weg.length + ")"); } catch (e) { /* egal */ }
+  return weg.length;
+}
+
+// Wird aus app.js beim Start aufgerufen (materialDBListener gibt es erst dort)
+function planeKatalogKopienAufraeumen() {
+  const kopienListener = () => {
+    if (!materialDBReady) return;
+    materialDBListener.delete(kopienListener);
+    // kurz warten, damit ein laufender Cloud-Abgleich nach dem Start zuerst durch ist
+    setTimeout(() => { try { entferneKatalogKopien(); } catch (e) { console.error("Aufräumen Katalog-Kopien", e); } }, 4000);
+  };
+  materialDBListener.add(kopienListener);
+}
