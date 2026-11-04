@@ -846,8 +846,10 @@ function zeigeStart() {
   view.className = "view";
   const anz = (n, s, p) => `${n} ${n === 1 ? s : p}`;
   const gross = "kachel-gross";
-  view.appendChild(baueKachel("clipboard orange", "Aufmaß", anz(aufmassListe.length, "Aufmaß", "Aufmaße") + " · Material je Baustelle", () => { aktuellerBereich = "aufmass"; zeigeUebersicht(); }, gross));
-  view.appendChild(baueKachel("home orange", "Bauaufmaß", anz(bauaufmasse.length, "Bauaufmaß", "Bauaufmaße") + " · Etagen, Räume, Verteilung", () => { aktuellerBereich = "bau"; zeigeUebersicht(); }, gross));
+  // v7.11: nur noch offene (nicht gesendete) Aufmaße zählen
+  const offen = (liste) => { const n = liste.filter((x) => !x.gesendet).length; return n ? `${n} offen` : "keine offen"; };
+  view.appendChild(baueKachel("clipboard orange", "Aufmaß", offen(aufmassListe) + " · Material je Baustelle", () => { aktuellerBereich = "aufmass"; zeigeUebersicht(); }, gross));
+  view.appendChild(baueKachel("home orange", "Bauaufmaß", offen(bauaufmasse) + " · Etagen, Räume, Verteilung", () => { aktuellerBereich = "bau"; zeigeUebersicht(); }, gross));
   view.appendChild(baueKachel("package blue", "Packliste", anz(packlisten.length, "Packliste", "Packlisten") + (bulliAnzahlOffen() ? ` · Bulli: ${bulliAnzahlOffen()} nachzuladen` : " · Abhaken beim Einladen"), () => { aktuellerBereich = "packliste"; zeigeUebersicht(); }, gross));
   const ma = typeof mitarbeiterName === "function" ? mitarbeiterName() : "";
   const einst = document.createElement("button");

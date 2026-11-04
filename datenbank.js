@@ -323,9 +323,15 @@ function baueMaterialFormular({ katId, katFest, eintrag, onSave, onCancel, ordne
     code.value = c;
     hinweis.hidden = false;
     const inDb = dbFindeCode(c);
+    let ordnerHinweis = "";
     if (inDb && (!eintrag || inDb.id !== eintrag.id)) {
-      hinweis.innerHTML = `ℹ Schon in der Datenbank: <strong>${escapeHtml(inDb.name)}</strong> (${escapeHtml(kategorieName(inDb.kat))}).`;
-      return;
+      // v7.11: Material in einem Baustellen-Ordner ist in den Kategorien ausgeblendet -> Ordner nennen
+      // und trotzdem die Katalogdaten übernehmen, damit es auch allgemein gespeichert werden kann
+      if (!inDb.ordner) {
+        hinweis.innerHTML = `ℹ Schon in der Datenbank: <strong>${escapeHtml(inDb.name)}</strong> (${escapeHtml(kategorieName(inDb.kat))}).`;
+        return;
+      }
+      ordnerHinweis = `ℹ Liegt bisher nur im Baustellen-Ordner <strong>„${escapeHtml(ordnerName(inDb.ordner))}“</strong> – hier kannst du es zusätzlich allgemein speichern.<br>`;
     }
     const treffer = typeof materialDB !== "undefined"
       ? (sucheNachEan(c, 3).find((a) => !a._eigen) || materialDB.find((a) => a.n === c))
@@ -334,7 +340,12 @@ function baueMaterialFormular({ katId, katFest, eintrag, onSave, onCancel, ordne
       name.value = treffer.b;
       nr.value = treffer.n;
       einheit.value = treffer.e || einheit.value;
-      hinweis.innerHTML = `✓ Im Katalog gefunden: <strong>${escapeHtml(treffer.b)}</strong> – Bezeichnung kann angepasst werden.`;
+      hinweis.innerHTML = ordnerHinweis + `✓ Im Katalog gefunden: <strong>${escapeHtml(treffer.b)}</strong> – Bezeichnung kann angepasst werden.`;
+    } else if (ordnerHinweis) {
+      name.value = inDb.name;
+      nr.value = inDb.nr || "";
+      einheit.value = inDb.einheit || einheit.value;
+      hinweis.innerHTML = ordnerHinweis + "Daten aus dem Ordner übernommen – Bezeichnung kann angepasst werden.";
     } else {
       hinweis.textContent = (typeof materialDBReady !== "undefined" && !materialDBReady)
         ? "Katalog wird noch geladen – Bezeichnung bitte selbst eintragen oder gleich noch einmal suchen."
