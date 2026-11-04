@@ -210,6 +210,17 @@ function ic(name) { return `<svg class="ic" aria-hidden="true"><use href="#i-${n
 
     <details class="section-card" open>
       <summary><span class="ht ht-blue"><svg class="ic" aria-hidden="true"><use href="#i-package"/></svg></span><span>Material hinzufügen</span></summary>
+      <div class="pl-frei">
+        <label class="full">Freitext
+          <input type="text" id="p_freiText" placeholder="einfach eintippen, z. B. Leiter, Bohrhammer, Kabel Garage" autocomplete="off" enterkeyhint="done">
+        </label>
+        <div class="pl-frei-zeile">
+          <input type="number" id="p_freiMenge" value="1" min="0" step="any" inputmode="decimal" aria-label="Menge">
+          <select id="p_freiEinheit" aria-label="Einheit"></select>
+          <button type="button" class="btn btn-primary" id="p_freiOk">Hinzufügen</button>
+        </div>
+      </div>
+      <p class="hint pl-frei-oder">oder aus Datenbank / Großhandelskatalog suchen:</p>
       <div id="materialHinzufuegenPackliste"></div>
     </details>
 

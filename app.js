@@ -1388,6 +1388,26 @@ function bindePacklisteEvents() {
     autosave();
   });
 
+  // v7.10: schlichtes Freitextfeld – nur in diese Packliste, nichts in der Datenbank
+  const freiText = document.getElementById("p_freiText");
+  const freiMenge = document.getElementById("p_freiMenge");
+  const freiEinheit = document.getElementById("p_freiEinheit");
+  freiEinheit.innerHTML = (typeof MS_EINHEITEN !== "undefined" ? MS_EINHEITEN : ["Stck", "m"]).map((e) => `<option>${e}</option>`).join("");
+  const freiHinzufuegen = () => {
+    const text = freiText.value.trim();
+    if (!text) { freiText.focus(); return; }
+    const v = parseFloat(String(freiMenge.value).replace(",", "."));
+    p.material.push({ id: neueId(), bezeichnung: text, artikelnummer: "", einheit: freiEinheit.value || "Stck", menge: v > 0 ? v : 1, quelle: "frei", erledigt: false });
+    renderPacklisteMaterial();
+    autosave();
+    freiText.value = "";
+    freiMenge.value = "1";
+    freiEinheit.selectedIndex = 0;
+    freiText.focus();
+  };
+  document.getElementById("p_freiOk").addEventListener("click", freiHinzufuegen);
+  freiText.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); freiHinzufuegen(); } });
+
   klonMaterialTabs("materialHinzufuegenPackliste");
   bindeMaterialAuswahl(p.material, () => {
     renderPacklisteMaterial();
