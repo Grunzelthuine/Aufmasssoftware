@@ -848,6 +848,30 @@ function zeigeStart() {
   const gross = "kachel-gross";
   // v7.11: nur noch offene (nicht gesendete) Aufmaße zählen
   const offen = (liste) => { const n = liste.filter((x) => !x.gesendet).length; return n ? `${n} offen` : "keine offen"; };
+  // v7.14: Hinweis auf Aufmaße mit vergebener Nummer, die noch nicht gesendet sind
+  const nrOffen = [
+    ...aufmassListe.filter((x) => x.nummer && !x.gesendet).map((x) => ({ x, bau: false, datum: x.datum })),
+    ...bauaufmasse.filter((x) => x.nummer && !x.gesendet).map((x) => ({ x, bau: true, datum: erstelltDatumISO(x) }))
+  ].sort((p, q) => String(p.x.nummer).localeCompare(String(q.x.nummer)));
+  if (nrOffen.length) {
+    const box = document.createElement("details");
+    box.className = "nr-offen-hinweis";
+    const n = nrOffen.length;
+    box.innerHTML = `<summary><span class="ht ht-orange">${ic("alert")}</span><span><strong>${n} ${n === 1 ? "Aufmaß" : "Aufmaße"} mit Nummer noch nicht gesendet</strong><small>Antippen zum Anzeigen</small></span></summary><ul></ul>`;
+    const ul = box.querySelector("ul");
+    for (const e of nrOffen) {
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="nr"></span><span class="kd"></span><span class="chevron">${ic("right")}</span>`;
+      li.querySelector(".nr").textContent = e.x.nummer + (e.bau ? " · Bau" : "");
+      li.querySelector(".kd").textContent = [(e.x.kunde && e.x.kunde.name.trim()) || "(ohne Kundenname)", e.datum ? formatDatumDE(e.datum) : ""].filter(Boolean).join(" · ");
+      li.addEventListener("click", () => {
+        if (e.bau) { aktuellerBereich = "bau"; oeffneBauaufmass(e.x); }
+        else { aktuellerBereich = "aufmass"; oeffneFormular(e.x); }
+      });
+      ul.appendChild(li);
+    }
+    view.appendChild(box);
+  }
   view.appendChild(baueKachel("clipboard orange", "Aufmaß", offen(aufmassListe) + " · Material je Baustelle", () => { aktuellerBereich = "aufmass"; zeigeUebersicht(); }, gross));
   view.appendChild(baueKachel("home orange", "Bauaufmaß", offen(bauaufmasse) + " · Etagen, Räume, Verteilung", () => { aktuellerBereich = "bau"; zeigeUebersicht(); }, gross));
   view.appendChild(baueKachel("package blue", "Packliste", anz(packlisten.length, "Packliste", "Packlisten") + (bulliAnzahlOffen() ? ` · Bulli: ${bulliAnzahlOffen()} nachzuladen` : " · Abhaken beim Einladen"), () => { aktuellerBereich = "packliste"; zeigeUebersicht(); }, gross));
@@ -903,7 +927,7 @@ function zeigeUebersicht() {
     leer.before(det);
     return ulGesendet;
   };
-  const karte = (titel, meta, onClick, gesendet) => {
+  const karte = (titel, meta, onClick, gesendet, nrVergeben) => {
     const li = document.createElement("li");
     li.className = "aufmass-card" + (gesendet ? " gesendet" : "");
     li.innerHTML = `<div class="info"><p class="kunde"></p><p class="meta"></p></div><span class="chevron">${ic("right")}</span>`;
@@ -913,6 +937,11 @@ function zeigeUebersicht() {
       const badge = document.createElement("span");
       badge.className = "gesendet-badge";
       badge.textContent = "✓ gesendet " + formatDatumDE(gesendet.slice(0, 10));
+      li.querySelector(".kunde").appendChild(badge);
+    } else if (nrVergeben) {
+      const badge = document.createElement("span");
+      badge.className = "nr-offen-badge";
+      badge.textContent = "Nummer vergeben · nicht gesendet";
       li.querySelector(".kunde").appendChild(badge);
     }
     li.addEventListener("click", onClick);
@@ -927,7 +956,7 @@ function zeigeUebersicht() {
     for (const a of sortiere(aufmassListe)) {
       const n = a.material.length;
       const besch = a.arbeitsbeschreibung.trim();
-      karte((a.nummer ? a.nummer + " · " : "") + (a.kunde.name.trim() || "(ohne Kundenname)"), `${formatDatumDE(a.datum)} · ${n} Position${n === 1 ? "" : "en"}${besch ? " · " + besch : ""}`, () => oeffneFormular(a), a.gesendet);
+      karte((a.nummer ? a.nummer + " · " : "") + (a.kunde.name.trim() || "(ohne Kundenname)"), `${formatDatumDE(a.datum)} · ${n} Position${n === 1 ? "" : "en"}${besch ? " · " + besch : ""}`, () => oeffneFormular(a), a.gesendet, !!a.nummer);
     }
   } else if (aktuellerBereich === "packliste") {
     leer.textContent = packlisten.length ? "" : "Noch keine Packliste angelegt.";
@@ -949,7 +978,7 @@ function zeigeUebersicht() {
       const besch = b.arbeitsbeschreibung.trim();
       karte((b.nummer ? b.nummer + " · " : "") + (b.kunde.name.trim() || "(ohne Kundenname)"),
         `${formatDatumDE(erstelltDatumISO(b))} · ${b.etagen.length} Etage${b.etagen.length === 1 ? "" : "n"}, ${nR} Raum${nR === 1 ? "" : "e"}${nV ? `, ${nV} Verteilung${nV === 1 ? "" : "en"}` : ""}${besch ? " · " + besch : ""}`,
-        () => oeffneBauaufmass(b), b.gesendet);
+        () => oeffneBauaufmass(b), b.gesendet, !!b.nummer);
     }
   }
   leer.hidden = !leer.textContent;

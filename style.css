@@ -1006,3 +1006,30 @@ td.bulli-menge { font-weight: 700; white-space: nowrap; }
   .az-zeile { grid-template-columns: minmax(0, 1fr) minmax(0, 4.5em) auto; }
   .az-zeile .az-dat { grid-column: 1 / -1; grid-row: 2; }
 }
+
+/* v7.14: Hinweis „Aufmaße mit Nummer noch nicht gesendet“ (Startseite) */
+.nr-offen-hinweis {
+  background: var(--orange-tint); border-radius: var(--radius); margin-bottom: 12px;
+  border: 1px solid rgba(239, 90, 36, .25);
+}
+.nr-offen-hinweis > summary {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; cursor: pointer; list-style: none;
+}
+.nr-offen-hinweis > summary::-webkit-details-marker { display: none; }
+.nr-offen-hinweis > summary .ht { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 10px; background: #fff; }
+.nr-offen-hinweis > summary > span:last-child { display: flex; flex-direction: column; min-width: 0; color: var(--orange-ink); }
+.nr-offen-hinweis > summary small { font-size: 12.5px; opacity: .8; }
+.nr-offen-hinweis[open] > summary small { display: none; }
+.nr-offen-hinweis ul { list-style: none; margin: 0; padding: 0 10px 10px; }
+.nr-offen-hinweis li {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  background: var(--card); border-radius: 10px; padding: 10px 12px; margin-top: 6px; cursor: pointer;
+}
+.nr-offen-hinweis li .nr { font-weight: 700; white-space: nowrap; }
+.nr-offen-hinweis li .kd { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nr-offen-hinweis li .chevron svg.ic { width: 16px; height: 16px; color: var(--muted); }
+.nr-offen-badge {
+  display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 20px;
+  background: var(--orange-tint); color: var(--orange-ink);
+  font-size: 11.5px; font-weight: 700; vertical-align: middle; white-space: nowrap;
+}
