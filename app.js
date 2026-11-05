@@ -1021,7 +1021,7 @@ function bindeFormularEvents() {
   }
 
   if (typeof bindeKundenstamm === "function") {
-    bindeKundenstamm({ name: "f_kundeName", ansprechpartner: "f_ansprechpartner", strasse: "f_strasse", plzOrt: "f_plzOrt", telefon: "f_telefon" }, a.kunde);
+    bindeKundenstamm("f", a.kunde, a);
   }
   klonMaterialTabs("materialHinzufuegenAufmass");
   bindeMaterialAuswahl(a.material, () => {

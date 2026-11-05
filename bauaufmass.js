@@ -1058,7 +1058,7 @@ function oeffneBauaufmass(b, scrollY) {
     el.addEventListener("input", (e) => { setter(e.target.value); autosave(); });
   }
   if (typeof bindeKundenstamm === "function") {
-    bindeKundenstamm({ name: "b_kundeName", ansprechpartner: "b_ansprechpartner", strasse: "b_strasse", plzOrt: "b_plzOrt", telefon: "b_telefon" }, b.kunde);
+    bindeKundenstamm("b", b.kunde, b);
   }
   // Baustellen-Ordner (v19) + Standard-Typen
   renderOrdnerAuswahl(b, "b_ordner");

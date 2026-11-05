@@ -5,7 +5,10 @@
    Gleiche Firestore-Sammlung `kundenstamm` und gleiche Regeln wie die
    Stundenzettel-App (ab v21): Alle angemeldeten Kollegen lesen und erweitern
    ihn. Doc-ID = encodeURIComponent(name.trim().toLowerCase()),
-   Felder: key, name, address (EINE Zeile "Straße, PLZ Ort, Tel. …"), t, by, del.
+   Felder: key, name, address (EINE Zeile "Straße, PLZ Ort, Tel. …"), t, by, del,
+   sites (v7.12: Baustellen je Kunde wie Stundenzettel-App v32:
+   [{ id, name, address, done, t }] – wird nur mitgeschrieben, wenn hier eine
+   Baustelle angelegt wurde; sonst bleibt das Feld in der Cloud unangetastet).
    Schreiben immer mit set(..., {merge:true}); Löschen = weich (del:true);
    eine vorhandene Adresse wird nie durch eine leere überschrieben.
    Lokale Kopie in localStorage (am2_kundenstamm) für den Offline-Start – sie
@@ -68,7 +71,7 @@ function ksAdresseAufteilen(zeile) {
 function ksRef(key) { return cloud.db.collection(KUNDEN_COLL).doc(encodeURIComponent(key)); }
 function ksBenutzer() { return typeof cloud !== "undefined" && cloud.db && cloud.auth && cloud.auth.currentUser; }
 
-function ksPush(key, geloescht) {
+function ksPush(key, geloescht, mitSites) {
   const user = ksBenutzer(); if (!user) return; // offline/abgemeldet: später per ksPushLocal()
   const by = user.email || user.uid;
   let p;
@@ -78,7 +81,9 @@ function ksPush(key, geloescht) {
   } else {
     const c = ksKunden[key]; if (!c) return;
     ksRemote[key] = { address: c.address || "", del: false };
-    p = ksRef(key).set({ key, name: c.name, address: c.address || "", t: c.t || Date.now(), by, del: false }, { merge: true });
+    const daten = { key, name: c.name, address: c.address || "", t: c.t || Date.now(), by, del: false };
+    if (mitSites && Array.isArray(c.sites)) daten.sites = c.sites;
+    p = ksRef(key).set(daten, { merge: true });
   }
   p.catch((err) => ksMeldeFehler(err));
 }
@@ -121,6 +126,8 @@ function ksStarteSync() {
       const cur = ksKunden[key];
       // leere Cloud-Adresse überschreibt keine lokale Adresse (wird danach hochgeladen)
       ksKunden[key] = { name: x.name, address: x.address || (cur && cur.address) || "", t: x.t || 0 };
+      const sites = Array.isArray(x.sites) ? x.sites : (cur && cur.sites);
+      if (Array.isArray(sites)) ksKunden[key].sites = sites;
     });
     ksSpeichereLokal();
     if (ksVerwaltungRender) ksVerwaltungRender();
@@ -175,11 +182,14 @@ function ksUmbenennen(oldKey, newName, address) {
   if (newKey === oldKey) { c.name = newName; c.address = address; c.t = Date.now(); }
   else {
     const ziel = ksKunden[newKey];
-    if (ziel) { if (!ziel.address && (address || c.address)) ziel.address = address || c.address; ziel.name = ziel.name || newName; ziel.t = Date.now(); }
-    else ksKunden[newKey] = { name: newName, address: address || c.address || "", t: Date.now() };
+    if (ziel) {
+      if (!ziel.address && (address || c.address)) ziel.address = address || c.address; ziel.name = ziel.name || newName; ziel.t = Date.now();
+      if (Array.isArray(c.sites) && c.sites.length) ziel.sites = [...(ziel.sites || []), ...c.sites.filter((x) => !(ziel.sites || []).some((y) => y.id === x.id))];
+    }
+    else ksKunden[newKey] = { name: newName, address: address || c.address || "", t: Date.now(), ...(Array.isArray(c.sites) && c.sites.length ? { sites: c.sites } : {}) };
     delete ksKunden[oldKey];
   }
-  ksSpeichereLokal(); ksPush(newKey); if (newKey !== oldKey) ksPush(oldKey, true);
+  ksSpeichereLokal(); ksPush(newKey, false, true); if (newKey !== oldKey) ksPush(oldKey, true);
 }
 
 function ksLoesche(key) {
@@ -208,12 +218,26 @@ function ksTreffer(q) {
   return starts.sort(byName).concat(contains.sort(byName)).slice(0, 8);
 }
 
-/* Hängt Vorschlagsliste + Adressübernahme an ein Kundenformular.
-   p = { name, ansprechpartner, strasse, plzOrt, telefon } (Element-IDs), kunde = Objekt (a.kunde / b.kunde) */
-function bindeKundenstamm(p, kunde) {
-  const el = {};
-  for (const k of Object.keys(p)) el[k] = document.getElementById(p[k]);
-  if (!el.name || !el.strasse) return;
+/* ---------- Baustellen je Kunde (v7.12, wie Stundenzettel-App v32) ---------- */
+
+function ksAktiveBaustellen(c) { return (c && Array.isArray(c.sites) ? c.sites : []).filter((x) => x && x.name && !x.done); }
+function ksBaustelleText(st) { return st.name + (st.address ? ", " + st.address.replace(/,?\s*(Tel\.?|Telefon|Mobil|Handy)\b.*$/i, "") : ""); }
+
+/* Kundenfeld wie in der Stundenzettel-App: EIN Feld „Kunde“ mit Vorschlägen (auch
+   Baustellen der Kunden), Pin „Kunde in der Nähe“, Baustellen-Chips + „Baustelle“,
+   darunter EINE Adresszeile (wird auf Straße / PLZ Ort / Telefon verteilt, damit PDF
+   und Daten unverändert bleiben). Präfix x = "f" (Aufmaß) oder "b" (Bauaufmaß).
+   kunde = a.kunde / b.kunde, obj = a / b (obj.baustelle = Text fürs PDF,
+   obj.baustelleId / obj.baustelleKunde = gewählte Baustelle aus dem Kundenstamm). */
+function bindeKundenstamm(x, kunde, obj) {
+  const $ = (id) => document.getElementById(x + "_" + id);
+  const el = {
+    name: $("kundeName"), ansprechpartner: $("ansprechpartner"), strasse: $("strasse"), plzOrt: $("plzOrt"),
+    telefon: $("telefon"), baustelle: $("baustelle"), adresse: $("adresse"), adresseBox: $("adresseBox"),
+    adresseLabel: $("adresseLabel"), siteRow: $("siteRow"), siteForm: $("siteForm"), siteTitel: $("siteFormTitel"),
+    siteName: $("siteName"), siteAdresse: $("siteAdresse")
+  };
+  if (!el.name || !el.adresse) return;
   const label = el.name.closest("label") || el.name.parentElement;
   label.classList.add("autocomplete");
   const liste = document.createElement("ul");
@@ -221,9 +245,190 @@ function bindeKundenstamm(p, kunde) {
   liste.hidden = true;
   label.appendChild(liste);
 
-  // v7.2: Standort-Funktionen (speckmann-standort.js, wie Stundenzettel-App v30)
-  // Kundenfeld + Pin-Knopf „Kunde in der Nähe“; Knopf und Liste werden nur einmal angelegt
-  // und in das jeweils geöffnete Formular umgehängt.
+  const setze = (feld, wert) => {
+    if (!el[feld]) return;
+    el[feld].value = wert;
+    el[feld].dispatchEvent(new Event("input", { bubbles: true }));
+  };
+  const schliesse = () => { liste.hidden = true; liste.innerHTML = ""; };
+  const kundeJetzt = () => ksKunden[custKey(el.name.value)];
+
+  // Zu welchem Kunden gehört der Inhalt des Adressfelds?
+  let besitzer = ksAdresseZusammen(kunde) ? custKey(kunde.name) : null;
+  let blurTimer = null;
+  el.adresse.value = ksAdresseZusammen(kunde);
+
+  // Adresszeile -> Einzelfelder
+  const adresseVerteilen = () => {
+    const a = ksAdresseAufteilen(el.adresse.value);
+    setze("strasse", a.strasse); setze("plzOrt", a.plzOrt); setze("telefon", a.telefon);
+  };
+  el.adresse.addEventListener("input", () => { besitzer = custKey(el.name.value) || null; adresseVerteilen(); });
+  el.adresse.addEventListener("change", () => { if (kundeJetzt()) kundenstammErfassen(kunde); });
+
+  const setzeAdresse = (zeile) => { el.adresse.value = zeile || ""; adresseVerteilen(); };
+
+  const aktualisiereAdressfeld = () => {
+    const name = el.name.value.trim();
+    el.adresseBox.hidden = !name;
+    const known = kundeJetzt();
+    el.adresseLabel.textContent = !known ? "Adresse (Neukunde) — Straße/Ort, Telefon"
+      : known.address ? "Adresse (aus Kundenstamm – bei Bedarf ergänzen/ändern)"
+      : "Adresse fehlt im Kundenstamm noch – hier eintragen, wird übernommen";
+  };
+
+  /* --- Baustelle --- */
+  const waehleBaustelle = (st, key) => {
+    obj.baustelleId = st ? st.id : "";
+    obj.baustelleKunde = st ? key : "";
+    setze("baustelle", st ? ksBaustelleText(st) : "");
+    el.baustelle.dispatchEvent(new Event("change", { bubbles: true }));
+    renderBaustellen();
+  };
+  const renderBaustellen = () => {
+    const name = el.name.value.trim();
+    const row = el.siteRow;
+    if (!name) { row.hidden = true; row.innerHTML = ""; return; }
+    const key = custKey(name);
+    const sites = ksAktiveBaustellen(ksKunden[key]);
+    const aktivId = obj.baustelleKunde === key ? obj.baustelleId : "";
+    let html = sites.map((st) => `<button type="button" class="qbtn site-chip${aktivId === st.id ? " active" : ""}" data-site="${escapeHtml(st.id)}">${escapeHtml(st.name)}</button>`).join("");
+    html += `<button type="button" class="qbtn site-add">${ic("plus")}Baustelle</button>`;
+    const text = (obj.baustelle || "").trim();
+    if (text) html += `<div class="site-info">${ic("pin")}<span>${escapeHtml(text)}</span><button type="button" class="site-weg" aria-label="Baustelle entfernen">${ic("x")}</button></div>`;
+    row.innerHTML = html;
+    row.hidden = false;
+  };
+  el.siteRow.addEventListener("click", (ev) => {
+    if (ev.target.closest(".site-add")) { zeigeBaustellenForm(); return; }
+    if (ev.target.closest(".site-weg")) { waehleBaustelle(null); return; }
+    const chip = ev.target.closest(".site-chip");
+    if (!chip) return;
+    const key = custKey(el.name.value);
+    const st = ksAktiveBaustellen(ksKunden[key]).find((s) => s.id === chip.dataset.site);
+    waehleBaustelle(obj.baustelleId === chip.dataset.site && obj.baustelleKunde === key ? null : st, key);
+  });
+  const zeigeBaustellenForm = () => {
+    const name = el.name.value.trim();
+    if (!name) { ksToast("Bitte zuerst den Kunden eintragen."); el.name.focus(); return; }
+    el.siteName.value = ""; el.siteAdresse.value = "";
+    el.siteTitel.textContent = `Neue Baustelle für „${name}“`;
+    el.siteForm.hidden = false;
+    el.siteName.focus();
+  };
+  $("siteAbbr").addEventListener("click", () => { el.siteForm.hidden = true; });
+  $("siteOk").addEventListener("click", () => {
+    const custName = el.name.value.trim();
+    const siteName = el.siteName.value.trim();
+    if (!custName) { ksToast("Bitte zuerst den Kunden eintragen."); return; }
+    if (!siteName) { ksToast("Bitte eine Bezeichnung eintragen, z. B. „Neubau“."); el.siteName.focus(); return; }
+    const key = custKey(custName);
+    if (!ksKunden[key]) upsertCustomer(custName, el.adresse.value);
+    const c = ksKunden[key];
+    if (!c) return;
+    const vorhanden = ksAktiveBaustellen(c).find((s) => s.name.toLowerCase() === siteName.toLowerCase());
+    if (vorhanden) {
+      el.siteForm.hidden = true;
+      waehleBaustelle(vorhanden, key);
+      ksToast("Diese Baustelle gibt es schon – ausgewählt.");
+      return;
+    }
+    const st = { id: "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name: siteName, address: el.siteAdresse.value.trim(), done: false, t: Date.now() };
+    c.sites = [...(Array.isArray(c.sites) ? c.sites : []), st];
+    c.t = Date.now();
+    ksSpeichereLokal();
+    ksPush(key, false, true);
+    if (ksVerwaltungRender) ksVerwaltungRender();
+    el.siteForm.hidden = true;
+    waehleBaustelle(st, key);
+    ksToast(`Baustelle „${siteName}“ angelegt${ksBenutzer() ? " – auch in der Stunden-App sichtbar" : ""}.`);
+  });
+
+  /* --- Kunde wählen --- */
+  const waehle = (c, baustelle) => {
+    const key = custKey(c.name);
+    if (!c.address && besitzer === null && el.adresse.value.trim()) {
+      // Kunde ohne Adresse im Stamm, aber Adresse schon von Hand eingetippt -> behalten und in den Stamm schreiben
+    } else {
+      setzeAdresse(c.address || "");
+      if (el.ansprechpartner && besitzer !== key) setze("ansprechpartner", "");
+    }
+    besitzer = key;
+    setze("name", c.name);
+    el.name.dispatchEvent(new Event("change", { bubbles: true }));
+    schliesse();
+    kundenstammErfassen(kunde);
+    if (baustelle) waehleBaustelle(baustelle, key);
+    else if (obj.baustelleId && obj.baustelleKunde !== key) waehleBaustelle(null);
+    aktualisiereAdressfeld();
+    renderBaustellen();
+  };
+
+  const neuAnlegen = (name) => {
+    upsertCustomer(name, "");
+    besitzer = null;
+    setzeAdresse("");
+    if (el.ansprechpartner) setze("ansprechpartner", "");
+    setze("name", ksKunden[custKey(name)].name);
+    schliesse();
+    if (obj.baustelleId) waehleBaustelle(null);
+    aktualisiereAdressfeld();
+    renderBaustellen();
+    setTimeout(() => el.adresse.focus(), 30);
+  };
+
+  const zeichne = () => {
+    const q = el.name.value.trim();
+    const ql = q.toLowerCase();
+    liste.innerHTML = "";
+    if (!q) { liste.hidden = true; return; }
+    const treffer = ksTreffer(q);
+    const exakt = ksKunden[custKey(q)];
+    if (exakt && treffer.length <= 1 && !ksAktiveBaustellen(exakt).length) { liste.hidden = true; return; }
+    // Kunden + deren Baustellen; zusätzlich Baustellen anderer Kunden, die zu Name/Ort passen
+    const eintraege = [];
+    const drin = new Set();
+    for (const c of treffer) {
+      eintraege.push({ c }); drin.add(custKey(c.name));
+      for (const st of ksAktiveBaustellen(c)) eintraege.push({ c, st });
+    }
+    for (const c of Object.values(ksKunden)) {
+      if (drin.has(custKey(c.name))) continue;
+      for (const st of ksAktiveBaustellen(c)) {
+        if ((st.name || "").toLowerCase().includes(ql) || (st.address || "").toLowerCase().includes(ql)) eintraege.push({ c, st });
+      }
+    }
+    for (const { c, st } of eintraege.slice(0, 12)) {
+      const li = document.createElement("li");
+      if (st) {
+        li.className = "ks-site";
+        li.innerHTML = `<span></span> <span class="s-site"></span><small></small>`;
+        li.firstChild.textContent = c.name;
+        li.querySelector(".s-site").textContent = st.name;
+        li.querySelector("small").textContent = st.address || "";
+        if (!st.address) li.querySelector("small").remove();
+        li.addEventListener("click", () => waehle(c, st));
+      } else {
+        li.innerHTML = `<span></span><small></small>`;
+        li.firstChild.textContent = c.name;
+        li.querySelector("small").textContent = c.address || "";
+        if (!c.address) li.querySelector("small").remove();
+        li.addEventListener("click", () => waehle(c));
+      }
+      liste.appendChild(li);
+    }
+    if (!exakt) {
+      const li = document.createElement("li");
+      li.className = "ks-neu";
+      li.innerHTML = `${ic("plus")}<span></span>`;
+      li.querySelector("span").textContent = `„${q}“ als neuen Kunden übernehmen`;
+      li.addEventListener("click", () => neuAnlegen(q));
+      liste.appendChild(li);
+    }
+    liste.hidden = liste.children.length === 0;
+  };
+
+  // v7.2: Standort „Kunde in der Nähe“ (Pin-Knopf neben dem Kundenfeld)
   const st = ksStandortTeile();
   if (st) {
     const wrap = document.createElement("div");
@@ -237,113 +442,28 @@ function bindeKundenstamm(p, kunde) {
     wrap.appendChild(st.box);
     SpeckmannStandort.hideList();
     el.name.addEventListener("input", () => SpeckmannStandort.hideList());
-    // Kunde aus „in der Nähe“ übernehmen = wie normale Auswahl
     ksStandortPick = (k) => { const c = ksKunden[custKey(k.name)] || k; waehle(c); };
-
-    // „Adresse aus Standort“: Die Bibliothek schreibt EINE Zeile „Straße Nr, PLZ Ort“ in ein
-    // (verstecktes) Hilfsfeld; von dort wird sie auf Straße und PLZ/Ort verteilt, Telefon bleibt.
-    const hilfsId = p.name + "_standortAdresse";
-    const hilf = document.createElement("input");
-    hilf.type = "hidden"; hilf.id = hilfsId;
-    const adrBtn = document.createElement("button");
-    adrBtn.type = "button";
-    adrBtn.className = "loc-btn";
-    adrBtn.dataset.locTarget = hilfsId;
-    adrBtn.innerHTML = `<svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg>Adresse aus Standort`;
-    const plzLabel = el.plzOrt && (el.plzOrt.closest("label") || el.plzOrt);
-    if (plzLabel) { plzLabel.after(adrBtn); adrBtn.after(hilf); }
-    // vor der Bibliothek (die am document lauscht): aktuelle Adresse ins Hilfsfeld für die Rückfrage
-    adrBtn.addEventListener("click", () => {
-      hilf.value = [el.strasse.value.trim(), el.plzOrt ? el.plzOrt.value.trim() : ""].filter(Boolean).join(", ");
-    });
-    hilf.addEventListener("change", () => {
-      const a = ksAdresseAufteilen(hilf.value);
-      setze("strasse", a.strasse);
-      if (el.plzOrt) setze("plzOrt", a.plzOrt);
-      el.strasse.dispatchEvent(new Event("change", { bubbles: true }));
-    });
   }
-
-  // Zu welchem Kunden gehört der Inhalt der Adressfelder?
-  let besitzer = ksAdresseZusammen(kunde) ? custKey(kunde.name) : null;
-  let blurTimer = null;
-
-  const setze = (feld, wert) => {
-    if (!el[feld]) return;
-    el[feld].value = wert;
-    el[feld].dispatchEvent(new Event("input", { bubbles: true }));
-  };
-  const schliesse = () => { liste.hidden = true; liste.innerHTML = ""; };
-
-  const waehle = (c) => {
-    const key = custKey(c.name);
-    const a = ksAdresseAufteilen(c.address);
-    if (!c.address && besitzer === null && ksAdresseZusammen({ strasse: el.strasse.value, plzOrt: el.plzOrt.value, telefon: el.telefon.value })) {
-      // Kunde ohne Adresse im Stamm, aber Adresse schon von Hand eingetippt -> behalten und in den Stamm schreiben
-    } else {
-      setze("strasse", a.strasse); setze("plzOrt", a.plzOrt); setze("telefon", a.telefon);
-      if (el.ansprechpartner && besitzer !== key) setze("ansprechpartner", "");
-    }
-    besitzer = key;
-    setze("name", c.name);
-    el.name.dispatchEvent(new Event("change", { bubbles: true }));
-    schliesse();
-    kundenstammErfassen(kunde);
-  };
-
-  const neuAnlegen = (name) => {
-    upsertCustomer(name, "");
-    besitzer = null;
-    setze("strasse", ""); setze("plzOrt", ""); setze("telefon", "");
-    if (el.ansprechpartner) setze("ansprechpartner", "");
-    setze("name", ksKunden[custKey(name)].name);
-    schliesse();
-    setTimeout(() => el.strasse.focus(), 30);
-  };
-
-  const zeichne = () => {
-    const q = el.name.value.trim();
-    liste.innerHTML = "";
-    if (!q) { liste.hidden = true; return; }
-    const treffer = ksTreffer(q);
-    for (const c of treffer) {
-      const li = document.createElement("li");
-      li.innerHTML = `<span></span><small></small>`;
-      li.firstChild.textContent = c.name;
-      li.querySelector("small").textContent = c.address || "";
-      if (!c.address) li.querySelector("small").remove();
-      li.addEventListener("click", () => waehle(c));
-      liste.appendChild(li);
-    }
-    if (!ksKunden[custKey(q)]) {
-      const li = document.createElement("li");
-      li.className = "ks-neu";
-      li.innerHTML = `${ic("plus")}<span></span>`;
-      li.querySelector("span").textContent = `„${q}“ als neuen Kunden übernehmen`;
-      li.addEventListener("click", () => neuAnlegen(q));
-      liste.appendChild(li);
-    }
-    liste.hidden = liste.children.length === 0;
-  };
 
   // Fokus im Feld halten, wenn die Liste angetippt wird (wichtig fürs iPhone)
   liste.addEventListener("mousedown", (e) => e.preventDefault());
   liste.addEventListener("touchstart", () => clearTimeout(blurTimer), { passive: true });
-  el.name.addEventListener("input", zeichne);
+  el.name.addEventListener("input", () => {
+    const key = custKey(el.name.value);
+    // Name von Hand geändert: Adresse im Feld gehört dann nicht mehr automatisch zum neuen Namen
+    const known = ksKunden[key];
+    if (known && besitzer !== key) { setzeAdresse(known.address || ""); besitzer = key; }
+    else if (!known && besitzer && ksKunden[besitzer]) { setzeAdresse(""); besitzer = null; }
+    if (obj.baustelleId && obj.baustelleKunde !== key) waehleBaustelle(null);
+    zeichne();
+    aktualisiereAdressfeld();
+    renderBaustellen();
+  });
   el.name.addEventListener("focus", zeichne);
   el.name.addEventListener("blur", () => { blurTimer = setTimeout(schliesse, 250); });
 
-  // Adresse nachtragen: sofort in den Stamm, wenn der Kunde schon bekannt ist
-  for (const f of ["strasse", "plzOrt", "telefon"]) {
-    el[f].addEventListener("change", () => {
-      if (besitzer === null && ksKunden[custKey(kunde.name)]) besitzer = custKey(kunde.name);
-      if (ksKunden[custKey(kunde.name)]) kundenstammErfassen(kunde);
-    });
-  }
-  // Name von Hand geändert: Adresse im Feld gehört dann nicht mehr automatisch zum neuen Namen
-  el.name.addEventListener("input", () => {
-    if (besitzer && custKey(el.name.value) !== besitzer) besitzer = null;
-  });
+  aktualisiereAdressfeld();
+  renderBaustellen();
 }
 
 /* ---------- Standort-Funktionen einmalig anlegen (v7.2) ---------- */

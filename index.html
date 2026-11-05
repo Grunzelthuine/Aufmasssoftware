@@ -134,25 +134,35 @@ function ic(name) { return `<svg class="ic" aria-hidden="true"><use href="#i-${n
 
     <details class="section-card">
       <summary><span class="ht ht-violet"><svg class="ic" aria-hidden="true"><use href="#i-users"/></svg></span><span>Kunde &amp; Baustelle</span></summary>
-      <div class="field-grid">
-        <label>Kunde / Firma
-          <input type="text" id="f_kundeName" placeholder="z. B. Mustermann GmbH">
+      <div class="field-grid kunde-grid">
+        <label>Kunde
+          <input type="text" id="f_kundeName" placeholder="z. B. Müller" autocomplete="off">
         </label>
+        <div class="quickbtns site-row" id="f_siteRow" hidden></div>
+        <div class="site-form" id="f_siteForm" hidden>
+          <div class="site-form-title" id="f_siteFormTitel">Neue Baustelle</div>
+          <label>Bezeichnung
+            <input type="text" id="f_siteName" placeholder="z. B. Neubau oder Baustelle Spelle" autocomplete="off">
+          </label>
+          <label>Adresse der Baustelle
+            <textarea id="f_siteAdresse" rows="2" placeholder="z. B. Am Sportplatz 4, 48480 Spelle"></textarea>
+          </label>
+          <button type="button" class="loc-btn" data-loc-target="f_siteAdresse"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg>Adresse aus Standort</button>
+          <div class="site-form-knoepfe">
+            <button type="button" class="btn btn-secondary" id="f_siteAbbr">Abbrechen</button>
+            <button type="button" class="btn btn-primary" id="f_siteOk">Baustelle speichern</button>
+          </div>
+        </div>
+        <div class="kunde-adresse" id="f_adresseBox" hidden>
+          <label><span id="f_adresseLabel">Adresse (Neukunde) — Straße/Ort, Telefon</span>
+            <textarea id="f_adresse" rows="2" placeholder="z. B. Hauptstraße 1, 49832 Freren, Tel. 0591 123456"></textarea>
+          </label>
+          <button type="button" class="loc-btn" data-loc-target="f_adresse"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg>Adresse aus Standort</button>
+        </div>
         <label>Ansprechpartner
           <input type="text" id="f_ansprechpartner" placeholder="optional">
         </label>
-        <label>Straße, Nr.
-          <input type="text" id="f_strasse" placeholder="optional">
-        </label>
-        <label>PLZ, Ort
-          <input type="text" id="f_plzOrt" placeholder="optional">
-        </label>
-        <label>Telefon
-          <input type="tel" id="f_telefon" placeholder="optional">
-        </label>
-        <label>Baustelle / Bauvorhaben
-          <input type="text" id="f_baustelle" placeholder="falls abweichend von Adresse">
-        </label>
+        <input type="hidden" id="f_strasse"><input type="hidden" id="f_plzOrt"><input type="hidden" id="f_telefon"><input type="hidden" id="f_baustelle">
       </div>
     </details>
 
@@ -273,25 +283,35 @@ function ic(name) { return `<svg class="ic" aria-hidden="true"><use href="#i-${n
   <section class="view">
     <details class="section-card" open>
       <summary><span class="ht ht-violet"><svg class="ic" aria-hidden="true"><use href="#i-users"/></svg></span><span>Kunde &amp; Baustelle</span></summary>
-      <div class="field-grid">
-        <label>Kunde / Firma
-          <input type="text" id="b_kundeName" placeholder="z. B. Mustermann GmbH">
+      <div class="field-grid kunde-grid">
+        <label>Kunde
+          <input type="text" id="b_kundeName" placeholder="z. B. Müller" autocomplete="off">
         </label>
+        <div class="quickbtns site-row" id="b_siteRow" hidden></div>
+        <div class="site-form" id="b_siteForm" hidden>
+          <div class="site-form-title" id="b_siteFormTitel">Neue Baustelle</div>
+          <label>Bezeichnung
+            <input type="text" id="b_siteName" placeholder="z. B. Neubau oder Baustelle Spelle" autocomplete="off">
+          </label>
+          <label>Adresse der Baustelle
+            <textarea id="b_siteAdresse" rows="2" placeholder="z. B. Am Sportplatz 4, 48480 Spelle"></textarea>
+          </label>
+          <button type="button" class="loc-btn" data-loc-target="b_siteAdresse"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg>Adresse aus Standort</button>
+          <div class="site-form-knoepfe">
+            <button type="button" class="btn btn-secondary" id="b_siteAbbr">Abbrechen</button>
+            <button type="button" class="btn btn-primary" id="b_siteOk">Baustelle speichern</button>
+          </div>
+        </div>
+        <div class="kunde-adresse" id="b_adresseBox" hidden>
+          <label><span id="b_adresseLabel">Adresse (Neukunde) — Straße/Ort, Telefon</span>
+            <textarea id="b_adresse" rows="2" placeholder="z. B. Hauptstraße 1, 49832 Freren, Tel. 0591 123456"></textarea>
+          </label>
+          <button type="button" class="loc-btn" data-loc-target="b_adresse"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg>Adresse aus Standort</button>
+        </div>
         <label>Ansprechpartner
           <input type="text" id="b_ansprechpartner" placeholder="optional">
         </label>
-        <label>Straße, Nr.
-          <input type="text" id="b_strasse" placeholder="optional">
-        </label>
-        <label>PLZ, Ort
-          <input type="text" id="b_plzOrt" placeholder="optional">
-        </label>
-        <label>Telefon
-          <input type="tel" id="b_telefon" placeholder="optional">
-        </label>
-        <label>Baustelle / Bauvorhaben
-          <input type="text" id="b_baustelle" placeholder="falls abweichend von Adresse">
-        </label>
+        <input type="hidden" id="b_strasse"><input type="hidden" id="b_plzOrt"><input type="hidden" id="b_telefon"><input type="hidden" id="b_baustelle">
       </div>
     </details>
 

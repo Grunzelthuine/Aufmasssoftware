@@ -962,3 +962,28 @@ td.bulli-menge { font-weight: 700; white-space: nowrap; }
 .pl-frei-zeile #p_freiEinheit { width: auto; flex: 0 0 auto; }
 .pl-frei-zeile .btn { flex: 1; }
 .pl-frei-oder { margin: 14px 0 6px; }
+
+/* v7.12: Kundenfeld + Baustellen wie Stundenzettel-App */
+.kunde-grid .site-row, .kunde-grid .site-form, .kunde-grid .kunde-adresse { grid-column: 1 / -1; }
+.quickbtns { display: flex; gap: 8px; flex-wrap: wrap; }
+.site-row { margin-top: -4px; align-items: center; }
+.qbtn { border: none; border-radius: 20px; background: var(--field); color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; padding: 8px 14px; cursor: pointer; }
+.qbtn:active { filter: brightness(.95); }
+.qbtn.active { background: var(--ink); color: #fff; }
+.qbtn.site-add { display: inline-flex; align-items: center; gap: 4px; background: var(--orange-tint); color: var(--orange-ink); }
+.qbtn.site-add svg.ic { width: 16px; height: 16px; }
+.site-info { flex-basis: 100%; display: flex; align-items: flex-start; gap: 6px; font-size: 13px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+.site-info > svg.ic { flex: 0 0 15px; width: 15px; height: 15px; color: var(--orange); margin-top: 1px; }
+.site-info span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.site-weg { border: none; background: none; color: var(--muted); padding: 0 2px; cursor: pointer; }
+.site-weg svg.ic { width: 16px; height: 16px; }
+.site-form { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 14px; border-radius: 14px; background: var(--orange-tint); }
+.site-form[hidden], .kunde-adresse[hidden], .site-row[hidden] { display: none !important; }
+.site-form-title { font-size: 14px; font-weight: 700; color: var(--orange-ink); }
+.site-form input, .site-form textarea { background-color: #fff; }
+.site-form .loc-btn { align-self: flex-start; margin-top: -4px; }
+.site-form-knoepfe { display: flex; gap: 8px; }
+.site-form-knoepfe .btn { flex: 1; margin-top: 0; }
+.kunde-adresse { display: flex; flex-direction: column; gap: 8px; }
+.kunde-adresse .loc-btn { align-self: flex-start; margin-top: 0; }
+.s-site { display: inline-block; font-size: 12px; font-weight: 700; color: var(--orange-ink); background: var(--orange-tint); border-radius: 20px; padding: 1px 8px; margin-left: 4px; vertical-align: 1px; }
