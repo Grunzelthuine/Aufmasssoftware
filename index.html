@@ -178,6 +178,11 @@ function ic(name) { return `<svg class="ic" aria-hidden="true"><use href="#i-${n
       </label>
     </details>
 
+    <details class="section-card">
+      <summary><span class="ht ht-green"><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg></span><span>Arbeitszeit</span></summary>
+      <div id="arbeitszeitBox"></div>
+    </details>
+
     <div class="action-bar">
       <button class="btn btn-outline" id="btnLoeschen" hidden>Aufmaß löschen</button>
       <button class="btn btn-primary" id="btnPdf">PDF erstellen &amp; senden</button>
@@ -505,6 +510,7 @@ function ic(name) { return `<svg class="ic" aria-hidden="true"><use href="#i-${n
 <script src="datenbank.js"></script>
 <script src="app.js"></script>
 <script src="mitarbeiter.js"></script>
+<script src="arbeitszeit.js"></script>
 <script src="katalog.js"></script>
 <script src="materialsuche.js"></script>
 <script src="cloudsync.js"></script>

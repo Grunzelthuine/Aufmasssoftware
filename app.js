@@ -984,6 +984,7 @@ function oeffneFormular(aufmass) {
   fuelleFormular();
   bindeFormularEvents();
   renderMaterialTabelle();
+  if (typeof renderArbeitszeit === "function") renderArbeitszeit(aufmass); // v7.13
 }
 
 function fuelleFormular() {
@@ -1577,15 +1578,7 @@ function erstellePdf(a) {
     m.einheit
   ]);
 
-  doc.autoTable({
-    startY: y,
-    head,
-    body,
-    margin: { left: marginX, right: marginX },
-    styles: { fontSize: 9, cellPadding: 2 },
-    headStyles: { fillColor: [21, 34, 56] },
-    columnStyles: { 0: { cellWidth: 9 }, 3: { cellWidth: 18 }, 4: { cellWidth: 16 } },
-    didDrawPage: () => {
+  const fusszeile = () => {
       const pageCount = doc.internal.getNumberOfPages();
       doc.setFontSize(8);
       doc.setTextColor(140);
@@ -1597,8 +1590,19 @@ function erstellePdf(a) {
         { align: "right" }
       );
       doc.setTextColor(0);
-    }
+  };
+  doc.autoTable({
+    startY: y,
+    head,
+    body,
+    margin: { left: marginX, right: marginX },
+    styles: { fontSize: 9, cellPadding: 2 },
+    headStyles: { fillColor: [21, 34, 56] },
+    columnStyles: { 0: { cellWidth: 9 }, 3: { cellWidth: 18 }, 4: { cellWidth: 16 } },
+    didDrawPage: fusszeile
   });
+  // v7.13: Arbeitszeit (Stundenzettel + manuelle Zeilen), Stand der gespeicherten Kopie
+  if (typeof pdfArbeitszeit === "function") pdfArbeitszeit(doc, a, marginX, fusszeile);
 
   // v19.3: nach erfolgreichem Teilen automatisch als gesendet markieren
   gibPdfAus(doc, dateiname(a), () => {
@@ -1642,7 +1646,23 @@ function aktualisiereGesendetStatus(obj) {
   el.classList.toggle("ist-gesendet", !!obj.gesendet);
   const text = document.createElement("span");
   const nr = obj.nummer ? `Nr. ${obj.nummer} · ` : "";
-  text.textContent = nr + (obj.gesendet ? `✓ Gesendet am ${formatZeitDE(obj.gesendet)}` : (obj.nummer ? "noch nicht gesendet" : "Nummer wird beim ersten PDF vergeben"));
+  text.textContent = nr + (obj.gesendet ? `✓ Gesendet am ${formatZeitDE(obj.gesendet)}` : (obj.nummer ? "noch nicht gesendet" : "noch keine Nummer"));
+  // v7.13: Nummer vorab vergeben (ohne Senden), damit sie im Stundenzettel auswählbar ist
+  if (!obj.nummer) {
+    const nrBtn = document.createElement("button");
+    nrBtn.type = "button";
+    nrBtn.className = "btn-link-accent";
+    nrBtn.textContent = "Nummer vergeben";
+    nrBtn.addEventListener("click", () => {
+      if (!vergibNummer(obj)) return;
+      if (gesendetSpeichern) gesendetSpeichern();
+      aktualisiereGesendetStatus(obj);
+      if (typeof currentAufmass !== "undefined" && currentAufmass === obj && typeof azAboStarten === "function") { azAboStarten(obj); azRenderSz(obj); }
+      if (typeof ksToast === "function") ksToast(`Nummer ${obj.nummer} vergeben – jetzt im Stundenzettel auswählbar.`);
+    });
+    el.append(text, nrBtn);
+    return;
+  }
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "btn-link-accent";
@@ -1651,6 +1671,7 @@ function aktualisiereGesendetStatus(obj) {
     setzeGesendet(obj, !obj.gesendet);
     if (gesendetSpeichern) gesendetSpeichern();
     aktualisiereGesendetStatus(obj);
+    if (typeof currentAufmass !== "undefined" && currentAufmass === obj && typeof renderArbeitszeit === "function") { azAboBeenden(); renderArbeitszeit(obj); }
   });
   el.append(text, btn);
 }

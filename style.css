@@ -987,3 +987,22 @@ td.bulli-menge { font-weight: 700; white-space: nowrap; }
 .kunde-adresse { display: flex; flex-direction: column; gap: 8px; }
 .kunde-adresse .loc-btn { align-self: flex-start; margin-top: 0; }
 .s-site { display: inline-block; font-size: 12px; font-weight: 700; color: var(--orange-ink); background: var(--orange-tint); border-radius: 20px; padding: 1px 8px; margin-left: 4px; vertical-align: 1px; }
+
+/* v7.13: Arbeitszeit im Aufmaß */
+.az-schalter { display: flex !important; flex-direction: row !important; justify-content: flex-start; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; color: var(--text); text-align: left; margin: 4px 0 10px; }
+.az-schalter input { width: 20px !important; height: 20px; flex: none; accent-color: var(--blue); }
+.az-aus { opacity: .45; }
+.az-titel { margin: 12px 0 6px; font-size: 13px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+.az-liste { list-style: none; margin: 0; padding: 0; }
+.az-liste li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line, #e6e8ec); font-size: 14px; }
+.az-liste .az-datum { font-variant-numeric: tabular-nums; }
+.az-liste .az-text { color: var(--muted); overflow-wrap: anywhere; }
+.az-liste .az-std { font-weight: 600; white-space: nowrap; }
+.az-zeile { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 8.5em) minmax(0, 4.5em) auto; gap: 6px; align-items: center; margin-bottom: 6px; }
+.az-zeile input { min-width: 0; }
+.az-nr-btn { margin: 4px 0 8px; }
+.az-summe { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line, #e6e8ec); text-align: right; }
+@media (max-width: 420px) {
+  .az-zeile { grid-template-columns: minmax(0, 1fr) minmax(0, 4.5em) auto; }
+  .az-zeile .az-dat { grid-column: 1 / -1; grid-row: 2; }
+}
